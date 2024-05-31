@@ -14,11 +14,41 @@ def random_retrieve(buffer, num_retrieve, excl_indices=None, return_indices=Fals
         excl_indices = []
     valid_indices = np.setdiff1d(filled_indices, np.array(excl_indices))
     num_retrieve = min(num_retrieve, valid_indices.shape[0])
-    indices = torch.from_numpy(np.random.choice(valid_indices, num_retrieve, replace=False)).long()
+    indices = torch.from_numpy(np.random.choice(
+        valid_indices, num_retrieve, replace=False)).long()
 
     x = buffer.buffer_img[indices]
 
     y = buffer.buffer_label[indices]
+
+    if return_indices:
+        return x, y, indices
+    else:
+        return x, y
+
+
+def temp_retrieve(buffer, num_retrieve, excl_indices=None, return_indices=False):
+    valid_indices = np.arange(buffer.current_index)
+
+    x = buffer.buffer_img[valid_indices]
+    y = buffer.buffer_label[valid_indices]
+
+    unique_cls, cls_num = y.unique(return_counts=True)
+
+    if y.numel() == 0:
+        min_cls = 0
+    else:
+        min_cls = cls_num.min().item()
+
+    indices = []
+
+    for label in unique_cls:
+        label_indices = np.where(y == label)[0]
+        indices.extend(np.random.choice(
+            label_indices, size=min_cls, replace=False))
+
+    x = x[indices]
+    y = y[indices]
 
     if return_indices:
         return x, y, indices
@@ -46,6 +76,7 @@ def match_retrieve(buffer, cur_y, exclud_idx=None):
     x = buffer.buffer_img[indices]
     y = buffer.buffer_label[indices]
     return x, y
+
 
 def cosine_similarity(x1, x2=None, eps=1e-8):
     x2 = x1 if x2 is None else x2
@@ -109,7 +140,8 @@ class ClassBalancedRandomSampling:
                 # Auxiliary indices for permutation
                 perm_ind = torch.randperm(len(valid_ind), device=device)
                 # Apply permutation, and select indices
-                ind = torch.tensor(list(valid_ind), device=device, dtype=torch.long)[perm_ind][:n_smp_cls]
+                ind = torch.tensor(list(valid_ind), device=device, dtype=torch.long)[
+                    perm_ind][:n_smp_cls]
                 sample_ind = torch.cat((sample_ind, ind))
 
         x = buffer_x[sample_ind]
@@ -135,7 +167,8 @@ class ClassBalancedRandomSampling:
         if cls.class_index_cache is None:
             # Initialize caches
             cls.class_index_cache = defaultdict(set)
-            cls.class_num_cache = torch.zeros(num_class, dtype=torch.long, device=device)
+            cls.class_num_cache = torch.zeros(
+                num_class, dtype=torch.long, device=device)
 
         if new_y is not None:
             # If ASER update is being used, keep updating existing caches
@@ -171,7 +204,6 @@ class BufferClassTracker(object):
         self.class_index_cache = defaultdict(set)
         self.class_num_cache = np.zeros(num_class)
 
-
     def update_cache(self, buffer_y, new_y=None, ind=None, ):
         """
             Collect indices of buffered data from each class in set.
@@ -197,7 +229,6 @@ class BufferClassTracker(object):
 
             self.class_index_cache[ny_int].add(i)
             self.class_num_cache[ny_int] += 1
-
 
     def check_tracker(self):
         print(self.class_num_cache.sum())

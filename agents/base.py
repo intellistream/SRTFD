@@ -42,6 +42,9 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         self.lbl_inv_map = {}
         self.class_task_map = {}
 
+        self.pseudo_x = []
+        self.pseudo_y = []
+
     def before_train(self, x_train, y_train):
         new_labels = list(set(y_train.tolist()))
         self.new_labels += new_labels
@@ -56,7 +59,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         pass
 
     def after_train(self):
-        #self.old_labels = list(set(self.old_labels + self.new_labels))
+        # self.old_labels = list(set(self.old_labels + self.new_labels))
         self.old_labels += self.new_labels
         self.new_labels_zombie = copy.deepcopy(self.new_labels)
         self.new_labels.clear()
@@ -76,14 +79,15 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         batch_x, batch_y = batch_data
                         batch_x = maybe_cuda(batch_x, self.cuda)
                         batch_y = maybe_cuda(batch_y, self.cuda)
-                        logits = self.model.forward(batch_x,batch_y)
+                        logits = self.model.forward(batch_x, batch_y)
                         if self.params.agent == 'SCR':
                             logits = torch.cat([self.model.forward(batch_x).unsqueeze(1),
-                                                  self.model.forward(self.transform(batch_x)).unsqueeze(1)], dim=1)
+                                                self.model.forward(self.transform(batch_x)).unsqueeze(1)], dim=1)
                         loss = self.criterion(logits, batch_y)
                         self.opt.zero_grad()
                         loss.backward()
-                        params = [p for p in self.model.parameters() if p.requires_grad and p.grad is not None]
+                        params = [p for p in self.model.parameters(
+                        ) if p.requires_grad and p.grad is not None]
                         grad = [p.grad.clone()/10. for p in params]
                         for g, p in zip(grad, params):
                             p.grad.data.copy_(g)
@@ -94,7 +98,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
 
     def criterion(self, logits, labels):
         labels = labels.clone()
-        ce =  torch.nn.CrossEntropyLoss(reduction='mean')
+        ce = torch.nn.CrossEntropyLoss(reduction='mean')
         FC = FocalLoss(6)
         if self.params.trick['labels_trick']:
             unq_lbls = labels.unique().sort()[0]
@@ -113,14 +117,14 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             SC = SupConLoss(temperature=self.params.temp)
             return SC(logits, labels)
         else:
-            loss_ce = ce(logits,labels)
-            loss_FC = FC(logits,labels)
+            loss_ce = ce(logits, labels)
+            loss_FC = FC(logits, labels)
             return loss_ce
 
     def forward(self, x):
         return self.model.forward(x)
 
-    def evaluate(self, test_loaders):
+    def evaluate(self, test_loaders, curr_task, conf_threshold=None):
         self.model.eval()
         acc_array = np.zeros(len(test_loaders))
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
@@ -133,12 +137,14 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                 features = []
                 # Extract feature for each exemplar in p_y
                 for ex in exemplar:
-                    feature = self.model.features(ex.unsqueeze(0)).detach().clone()
+                    feature = self.model.features(
+                        ex.unsqueeze(0)).detach().clone()
                     feature = feature.squeeze()
                     feature.data = feature.data / feature.data.norm()  # Normalize
                     features.append(feature)
                 if len(features) == 0:
-                    mu_y = maybe_cuda(torch.normal(0, 1, size=tuple(self.model.features(x.unsqueeze(0)).detach().size())), self.cuda)
+                    mu_y = maybe_cuda(torch.normal(0, 1, size=tuple(
+                        self.model.features(x.unsqueeze(0)).detach().size())), self.cuda)
                     mu_y = mu_y.squeeze()
                 else:
                     features = torch.stack(features)
@@ -156,8 +162,12 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                 old_class_score = AverageMeter()
                 correct_lb = []
                 predict_lb = []
-            
+
             count = 0
+            # self.pseudo_x = np.array([])
+            # self.pseudo_y = np.array([])
+            self.pseudo_x = []
+            self.pseudo_y = []
             for task, test_loader in enumerate(test_loaders):
                 acc = AverageMeter()
                 accuracy11 = torch.empty(0)
@@ -166,31 +176,48 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                     batch_x = maybe_cuda(batch_x, self.cuda)
                     batch_y = maybe_cuda(batch_y, self.cuda)
                     if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
-                        feature = self.model.features(batch_x)  # (batch_size, feature_size)
-                        
-                        for j in range(feature.size(0)):  # Normalize
-                            feature.data[j] = feature.data[j] / feature.data[j].norm()
-                        feature = feature.unsqueeze(2)  # (batch_size, feature_size, 1)
-                        means = torch.stack([exemplar_means[cls] for cls in self.old_labels])  # (n_classes, feature_size)
+                        # (batch_size, feature_size)
+                        feature = self.model.features(batch_x)
 
-                        #old ncm
-                        means = torch.stack([means] * batch_x.size(0))  # (batch_size, n_classes, feature_size)
+                        for j in range(feature.size(0)):  # Normalize
+                            feature.data[j] = feature.data[j] / \
+                                feature.data[j].norm()
+                        # (batch_size, feature_size, 1)
+                        feature = feature.unsqueeze(2)
+                        # (n_classes, feature_size)
+                        means = torch.stack([exemplar_means[cls]
+                                            for cls in self.old_labels])
+
+                        # old ncm
+                        # (batch_size, n_classes, feature_size)
+                        means = torch.stack([means] * batch_x.size(0))
                         means = means.transpose(1, 2)
-                        feature = feature.expand_as(means)  # (batch_size, feature_size, n_classes)
-                        dists = (feature - means).pow(2).sum(1).squeeze()  # (batch_size, n_classes)
+                        # (batch_size, feature_size, n_classes)
+                        feature = feature.expand_as(means)
+                        # (batch_size, n_classes)
+                        dists = (feature - means).pow(2).sum(1).squeeze()
                         _, pred_label = dists.min(1)
                         # may be faster
                         # feature = feature.squeeze(2).T
                         # _, preds = torch.matmul(means, feature).max(0)
                         correct_cnt = (np.array(self.old_labels)[
-                                           pred_label.tolist()] == batch_y.cpu().numpy()).sum().item() / batch_y.size(0)
+                            pred_label.tolist()] == batch_y.cpu().numpy()).sum().item() / batch_y.size(0)
                     else:
                         logits = self.model.forward(batch_x)
-                        _, pred_label = torch.max(logits, 1)
+                        probs = F.softmax(logits, dim=1)
+                        conf, pred_label = torch.max(probs, 1)
+
+                        if curr_task == task and conf_threshold is not None:
+                            for i in range(len(batch_x)):
+                                if conf[i] > conf_threshold and pred_label[i] == batch_y[i]:
+                                    self.pseudo_x.append(batch_x[i])
+                                    self.pseudo_y.append(batch_y[i])
+
                         accuracy11 = torch.cat((accuracy11, pred_label), dim=0)
-                        #print(len(accuracy))
-                        correct_cnt = (pred_label == batch_y).sum().item()/batch_y.size(0)
-                        
+                        # print(len(accuracy))
+                        correct_cnt = (pred_label == batch_y).sum(
+                        ).item()/batch_y.size(0)
+
                         Label11 = torch.cat((Label11, batch_y), dim=0)
 
                     if self.params.error_analysis:
@@ -202,40 +229,49 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             total = (pred_label != batch_y).sum().item()
                             wrong = pred_label[pred_label != batch_y]
                             error += total
-                            on_tmp = sum([(wrong == i).sum().item() for i in self.new_labels_zombie])
+                            on_tmp = sum([(wrong == i).sum().item()
+                                         for i in self.new_labels_zombie])
                             oo += total - on_tmp
                             on += on_tmp
-                            old_class_score.update(logits[:, list(set(self.old_labels) - set(self.new_labels_zombie))].mean().item(), batch_y.size(0))
-                        elif task == self.task_seen -1:
+                            old_class_score.update(logits[:, list(set(
+                                self.old_labels) - set(self.new_labels_zombie))].mean().item(), batch_y.size(0))
+                        elif task == self.task_seen - 1:
                             # new test
                             total = (pred_label != batch_y).sum().item()
                             error += total
                             wrong = pred_label[pred_label != batch_y]
-                            no_tmp = sum([(wrong == i).sum().item() for i in list(set(self.old_labels) - set(self.new_labels_zombie))])
+                            no_tmp = sum([(wrong == i).sum().item() for i in list(
+                                set(self.old_labels) - set(self.new_labels_zombie))])
                             no += no_tmp
                             nn += total - no_tmp
-                            new_class_score.update(logits[:, self.new_labels_zombie].mean().item(), batch_y.size(0))
+                            new_class_score.update(
+                                logits[:, self.new_labels_zombie].mean().item(), batch_y.size(0))
                         else:
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
-                conf_matrix(accuracy11,Label11)
+                conf_matrix(accuracy11, Label11)
                 acc_array[task] = acc.avg()
-                
+
         print(acc_array)
-        
+
        # print(len(accuracy11))
         if self.params.error_analysis:
             self.error_list.append((no, nn, oo, on))
             self.new_class_score.append(new_class_score.avg())
             self.old_class_score.append(old_class_score.avg())
-            print("no ratio: {}\non ratio: {}".format(no/(no+nn+0.1), on/(oo+on+0.1)))
+            print("no ratio: {}\non ratio: {}".format(
+                no/(no+nn+0.1), on/(oo+on+0.1)))
             print(self.error_list)
             print(self.new_class_score)
             print(self.old_class_score)
-            self.fc_norm_new.append(self.model.linear.weight[self.new_labels_zombie].mean().item())
-            self.fc_norm_old.append(self.model.linear.weight[list(set(self.old_labels) - set(self.new_labels_zombie))].mean().item())
-            self.bias_norm_new.append(self.model.linear.bias[self.new_labels_zombie].mean().item())
-            self.bias_norm_old.append(self.model.linear.bias[list(set(self.old_labels) - set(self.new_labels_zombie))].mean().item())
+            self.fc_norm_new.append(
+                self.model.linear.weight[self.new_labels_zombie].mean().item())
+            self.fc_norm_old.append(self.model.linear.weight[list(
+                set(self.old_labels) - set(self.new_labels_zombie))].mean().item())
+            self.bias_norm_new.append(
+                self.model.linear.bias[self.new_labels_zombie].mean().item())
+            self.bias_norm_old.append(self.model.linear.bias[list(
+                set(self.old_labels) - set(self.new_labels_zombie))].mean().item())
             print(self.fc_norm_old)
             print(self.fc_norm_new)
             print(self.bias_norm_old)

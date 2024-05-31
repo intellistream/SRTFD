@@ -11,7 +11,7 @@ def main(args):
     print(args)
     # set up seed
     np.random.seed(args.seed)
-    
+
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     if args.cuda:
@@ -27,14 +27,15 @@ def main(args):
 
 if __name__ == "__main__":
     # Commandline arguments
-    parser = argparse.ArgumentParser(description="Online Continual Learning PyTorch")
-    ########################General#########################
+    parser = argparse.ArgumentParser(
+        description="Online Continual Learning PyTorch")
+    ######################## General#########################
     parser.add_argument('--num_runs', dest='num_runs', default=1, type=int,
                         help='Number of runs (default: %(default)s)')
     parser.add_argument('--seed', dest='seed', default=0, type=int,
                         help='Random seed')
 
-    ########################Misc#########################
+    ######################## Misc#########################
     parser.add_argument('--val_size', dest='val_size', default=0, type=float,
                         help='val_size (default: %(default)s)')
     parser.add_argument('--num_val', dest='num_val', default=2, type=int,
@@ -49,16 +50,17 @@ if __name__ == "__main__":
                         help='Store result or not (default: %(default)s)')
     parser.add_argument('--save-path', dest='save_path', default=None)
 
-    ########################Agent#########################
+    ######################## Agent#########################
     parser.add_argument('--agent', dest='agent', default='ER',
-                        choices=['ER', 'EWC', 'AGEM', 'CNDPM', 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR'],
+                        choices=['ER', 'EWC', 'AGEM', 'CNDPM',
+                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR'],
                         help='Agent selection  (default: %(default)s)')
     parser.add_argument('--update', dest='update', default='random', choices=['random', 'GSS', 'ASER'],
                         help='Update method  (default: %(default)s)')
-    parser.add_argument('--retrieve', dest='retrieve', default='random', choices=['MIR', 'random', 'ASER', 'match', 'mem_match'],
+    parser.add_argument('--retrieve', dest='retrieve', default='temp', choices=['MIR', 'random', 'ASER', 'match', 'mem_match', 'temp'],
                         help='Retrieve method  (default: %(default)s)')
 
-    ########################Optimizer#########################
+    ######################## Optimizer#########################
     parser.add_argument('--optimizer', dest='optimizer', default='SGD', choices=['SGD', 'Adam'],
                         help='Optimizer (default: %(default)s)')
     parser.add_argument('--learning_rate', dest='learning_rate', default=0.001,
@@ -76,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.01,
                         help='weight_decay')
 
-    ########################Data#########################
+    ######################## Data#########################
     parser.add_argument('--num_tasks', dest='num_tasks', default=6,
                         type=int,
                         help='Number of tasks (default: %(default)s), OpenLORIS num_tasks is predefined')
@@ -101,7 +103,7 @@ if __name__ == "__main__":
                         type=boolean_string,
                         help='If False, offline training will be performed (default: %(default)s)')
 
-    ########################ER#########################
+    ######################## ER#########################
     parser.add_argument('--mem_size', dest='mem_size', default=1000,
                         type=int,
                         help='Memory buffer size (default: %(default)s)')
@@ -109,7 +111,7 @@ if __name__ == "__main__":
                         type=int,
                         help='Episode memory per batch (default: %(default)s)')
 
-    ########################EWC##########################
+    ######################## EWC##########################
     parser.add_argument('--lambda', dest='lambda_', default=100, type=float,
                         help='EWC regularization coefficient')
     parser.add_argument('--alpha', dest='alpha', default=0.9, type=float,
@@ -117,18 +119,18 @@ if __name__ == "__main__":
     parser.add_argument('--fisher_update_after', dest='fisher_update_after', type=int, default=50,
                         help="Number of training iterations after which the Fisher will be updated.")
 
-    ########################MIR#########################
+    ######################## MIR#########################
     parser.add_argument('--subsample', dest='subsample', default=50,
                         type=int,
                         help='Number of subsample to perform MIR(default: %(default)s)')
 
-    ########################GSS#########################
+    ######################## GSS#########################
     parser.add_argument('--gss_mem_strength', dest='gss_mem_strength', default=10, type=int,
                         help='Number of batches randomly sampled from memory to estimate score')
     parser.add_argument('--gss_batch_size', dest='gss_batch_size', default=10, type=int,
                         help='Random sampling batch size to estimate score')
 
-    ########################ASER########################
+    ######################## ASER########################
     parser.add_argument('--k', dest='k', default=5,
                         type=int,
                         help='Number of nearest neighbors (K) to perform ASER (default: %(default)s)')
@@ -143,19 +145,23 @@ if __name__ == "__main__":
                         type=float,
                         help='Maximum number of samples per class for random sampling (default: %(default)s)')
 
-    ########################CNDPM#########################
-    parser.add_argument('--stm_capacity', dest='stm_capacity', default=1000, type=int, help='Short term memory size')
+    ######################## CNDPM#########################
+    parser.add_argument('--stm_capacity', dest='stm_capacity',
+                        default=1000, type=int, help='Short term memory size')
     parser.add_argument('--classifier_chill', dest='classifier_chill', default=0.01, type=float,
                         help='NDPM classifier_chill')
-    parser.add_argument('--log_alpha', dest='log_alpha', default=-300, type=float, help='Prior log alpha')
+    parser.add_argument('--log_alpha', dest='log_alpha',
+                        default=-300, type=float, help='Prior log alpha')
 
-    ########################GDumb#########################
-    parser.add_argument('--minlr', dest='minlr', default=0.0005, type=float, help='Minimal learning rate')
+    ######################## GDumb#########################
+    parser.add_argument('--minlr', dest='minlr', default=0.0005,
+                        type=float, help='Minimal learning rate')
     parser.add_argument('--clip', dest='clip', default=10., type=float,
                         help='value for gradient clipping')
-    parser.add_argument('--mem_epoch', dest='mem_epoch', default=70, type=int, help='Epochs to train for memory')
+    parser.add_argument('--mem_epoch', dest='mem_epoch',
+                        default=70, type=int, help='Epochs to train for memory')
 
-    #######################Tricks#########################
+    ####################### Tricks#########################
     parser.add_argument('--labels_trick', dest='labels_trick', default=False, type=boolean_string,
                         help='Labels trick')
     parser.add_argument('--separated_softmax', dest='separated_softmax', default=False, type=boolean_string,
@@ -171,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument('--mem_iters', dest='mem_iters', default=1, type=int,
                         help='mem_iters')
 
-    ####################Early Stopping######################
+    #################### Early Stopping######################
     parser.add_argument('--min_delta', dest='min_delta', default=0., type=float,
                         help='A minimum increase in the score to qualify as an improvement')
     parser.add_argument('--patience', dest='patience', default=0, type=int,
@@ -180,7 +186,7 @@ if __name__ == "__main__":
                         help='If True, `min_delta` defines an increase since the last `patience` reset, '
                              'otherwise, it defines an increase after the last event.')
 
-    ####################SupContrast######################
+    #################### SupContrast######################
     parser.add_argument('--temp', type=float, default=0.07,
                         help='temperature for loss function')
     parser.add_argument('--buffer_tracker', type=boolean_string, default=False,

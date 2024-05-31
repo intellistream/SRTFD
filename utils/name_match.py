@@ -20,6 +20,7 @@ from utils.buffer.aser_retrieve import ASER_retrieve
 from utils.buffer.aser_update import ASER_update
 from utils.buffer.sc_retrieve import Match_retrieve
 from utils.buffer.mem_match import MemMatch_retrieve
+from utils.buffer.temp_retrieve import Temp_retrieve
 
 data_objects = {
     'cifar100': CIFAR100,
@@ -31,7 +32,7 @@ data_objects = {
 }
 
 agents = {
-    'ER': ExperienceReplay ,
+    'ER': ExperienceReplay,
     'EWC': EWC_pp,
     'AGEM': AGEM,
     'CNDPM': Cndpm,
@@ -46,7 +47,8 @@ retrieve_methods = {
     'random': Random_retrieve,
     'ASER': ASER_retrieve,
     'match': Match_retrieve,
-    'mem_match': MemMatch_retrieve
+    'mem_match': MemMatch_retrieve,
+    'temp': Temp_retrieve
 
 }
 
@@ -55,4 +57,3 @@ update_methods = {
     'GSS': GSSGreedyUpdate,
     'ASER': ASER_update
 }
-
