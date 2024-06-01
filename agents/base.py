@@ -124,7 +124,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def forward(self, x):
         return self.model.forward(x)
 
-    def evaluate(self, test_loaders, curr_task, conf_threshold=None):
+    def evaluate(self, test_loaders, curr_task, conf_threshold={}, uncertain_threshold={}):
         self.model.eval()
         acc_array = np.zeros(len(test_loaders))
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
@@ -207,9 +207,17 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         probs = F.softmax(logits, dim=1)
                         conf, pred_label = torch.max(probs, 1)
 
-                        if curr_task == task and conf_threshold is not None:
+                        if curr_task == task:
+                            entropy = - \
+                                torch.sum(
+                                    probs * torch.log2(probs + 1e-10), dim=1)
+                            preds = pred_label.tolist()
                             for i in range(len(batch_x)):
-                                if conf[i] > conf_threshold and pred_label[i] == batch_y[i]:
+                                c_t = conf_threshold.get(preds[i], 0)
+                                u_t = uncertain_threshold.get(
+                                    preds[i], 100)
+
+                                if conf[i] > c_t and entropy[i] < u_t:
                                     self.pseudo_x.append(batch_x[i])
                                     self.pseudo_y.append(batch_y[i])
 

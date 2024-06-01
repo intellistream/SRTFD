@@ -60,7 +60,8 @@ def multiple_run(params, store=False, save_path=None):
 
                 agent.train_learner(
                     x_train, y_train, agent.pseudo_x, agent.pseudo_y, alpha=None)
-                acc_array = agent.evaluate(test_loaders, i, conf_threshold=0.95)
+                acc_array = agent.evaluate(test_loaders, i, conf_threshold={0: 0.9, 1: 0.9, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.9}, uncertain_threshold={
+                                           0: 0.05, 1: 0.05, 2: 0.05, 3: 0.05, 4: 0.05, 5: 0.05})
                 tmp_acc.append(acc_array)
             run_end = time.time()
             print(
