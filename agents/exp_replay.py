@@ -8,6 +8,8 @@ from utils.setup_elements import transforms_match
 from utils.utils import maybe_cuda, AverageMeter
 from utils.Cluster import Cluster, KL_div
 
+from utils.coreset import Coreset_Greedy
+
 
 class ExperienceReplay(ContinualLearner):
     def __init__(self, model, opt, params):
@@ -17,16 +19,37 @@ class ExperienceReplay(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x, pseudo_y, alpha=None):
+    def train_learner(self, x_train, y_train, pseudo_x, pseudo_y, alpha=None, coreset_ratio=1, samples_per_class=None):
         self.before_train(x_train, y_train)
         # x_train, y_train = KL_div(x_train, y_train, 10, self.buffer)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
+
+        pseudo_x = np.array(pseudo_x)
+        pseudo_y = np.array(pseudo_y)
+
+        print('PS', len(pseudo_y))
+
+        coreset = Coreset_Greedy(x_train, pseudo_x, y_train, pseudo_y)
+        idx = coreset.sample(coreset_ratio, samples_per_class=samples_per_class)
+
+        orig_size = len(y_train)
+
+        mask_l = idx < orig_size
+        mask_pl = np.logical_and(idx >= len(
+            y_train), idx < orig_size + len(pseudo_y))
+
+        x_train = x_train[idx[mask_l]]
+        y_train = y_train[idx[mask_l]]
+        pseudo_x = pseudo_x[idx[mask_pl] - orig_size]
+        pseudo_y = pseudo_y[idx[mask_pl] - orig_size]
+
+        print(len(y_train), len(pseudo_y))
 
         # set up loader
         train_dataset = dataset_transform(
             x_train, y_train, transform=transforms_match[self.data])
         ps_train_dataset = dataset_transform(
-            np.array(pseudo_x), np.array(pseudo_y), transform=transforms_match[self.data])
+            pseudo_x, pseudo_y, transform=transforms_match[self.data])
 
         if alpha is not None:
             ps_train_loader = data.DataLoader(ps_train_dataset, batch_size=self.batch, shuffle=len(ps_train_dataset) != 0, num_workers=0,
@@ -53,6 +76,7 @@ class ExperienceReplay(ContinualLearner):
                 for i, batch_data in enumerate(ps_train_loader):
                     # batch update
                     batch_x, batch_y = batch_data
+
                     batch_x = maybe_cuda(batch_x, self.cuda)
                     batch_y = maybe_cuda(batch_y, self.cuda)
                     for j in range(self.mem_iters):
@@ -84,6 +108,7 @@ class ExperienceReplay(ContinualLearner):
                 batch_x, batch_y = batch_data
                 batch_x = maybe_cuda(batch_x, self.cuda)
                 batch_y = maybe_cuda(batch_y, self.cuda)
+
                 for j in range(self.mem_iters):
                     logits = self.model.forward(batch_x)
                     loss = self.criterion(logits, batch_y)
