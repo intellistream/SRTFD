@@ -257,8 +257,9 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         else:
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
-                conf_matrix(accuracy11, Label11)
+                
                 acc_array[task] = acc.avg()
+            conf_matrix(accuracy11, Label11)
 
         print(acc_array)
 

@@ -22,7 +22,7 @@ def conf_matrix(y_pred, y_true, normalize=False, cmap=plt.cm.Blues):
         for h in range(num1):
             cm1[l, h] = cm1[l, h]/num
 
-    print(cm1)
+    #print(cm1)
 
    # accuracy  = accuracy_score(y_true, y_pred)
 
