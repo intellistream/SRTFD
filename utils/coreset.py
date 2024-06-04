@@ -29,11 +29,8 @@ class Coreset_Greedy:
         self.min_distances = np.minimum(
             self.min_distances, np.min(dist, axis=0))
 
-    def sample(self, sample_ratio, samples_per_class=None):
+    def sample(self, sample_ratio):
         sample_size = int(self.dset_size * sample_ratio)
-
-        if samples_per_class:
-            sample_size = self.dset_size
 
         new_batch = {label: [] for label in np.unique(self.labels)}
 
@@ -53,8 +50,6 @@ class Coreset_Greedy:
             new_batch[self.labels[ind]].append(ind)
 
         min_count = min(len(lst)for lst in new_batch.values())
-        if samples_per_class:
-            min_count = min(min_count, samples_per_class)
 
         new_balanced_batch = np.array([item for sublist in new_batch.values()
                                        for item in sublist[:min_count]])

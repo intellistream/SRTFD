@@ -19,7 +19,7 @@ class ExperienceReplay(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x, pseudo_y, alpha=None, coreset_ratio=1, samples_per_class=None):
+    def train_learner(self, x_train, y_train, pseudo_x, pseudo_y, alpha=None, coreset_ratio=1):
         self.before_train(x_train, y_train)
         # x_train, y_train = KL_div(x_train, y_train, 10, self.buffer)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
@@ -30,7 +30,7 @@ class ExperienceReplay(ContinualLearner):
         print('PS', len(pseudo_y))
 
         coreset = Coreset_Greedy(x_train, pseudo_x, y_train, pseudo_y)
-        idx = coreset.sample(coreset_ratio, samples_per_class=samples_per_class)
+        idx = coreset.sample(coreset_ratio)
 
         orig_size = len(y_train)
 
