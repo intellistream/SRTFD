@@ -21,7 +21,8 @@ class ExperienceReplay(ContinualLearner):
 
     def train_learner(self, x_train, y_train, pseudo_x, pseudo_y, alpha=None, coreset_ratio=1):
         self.before_train(x_train, y_train)
-        # x_train, y_train = KL_div(x_train, y_train, 10, self.buffer)
+        print('before size: {}, {}'.format(x_train.shape, y_train.shape))
+        x_train, y_train = KL_div(x_train, y_train, self.buffer, 15)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
 
         pseudo_x = np.array(pseudo_x)
@@ -144,8 +145,7 @@ class ExperienceReplay(ContinualLearner):
                                 self.kd_manager.get_kd_loss(mem_logits, mem_x)
                         if self.params.trick['kd_trick_star']:
                             loss_mem = 1 / ((self.task_seen + 1) ** 0.5) * loss_mem + \
-                                (1 - 1 / ((self.task_seen + 1) ** 0.5)) * self.kd_manager.get_kd_loss(mem_logits,
-                                                                                                      mem_x)
+                                (1 - 1 / ((self.task_seen + 1) ** 0.5)) * self.kd_manager.get_kd_loss(mem_logits,mem_x)
                         # update tracker
                         losses_mem.update(loss_mem, mem_y.size(0))
                         _, pred_label = torch.max(mem_logits, 1)
@@ -173,7 +173,7 @@ class ExperienceReplay(ContinualLearner):
                 if ep == 0:
                     self.buffer.update(batch_x, batch_y)
 
-                if i % 20 == 0 and self.verbose:
+                if i % 2 == 0 and self.verbose:
                     print(
                         '==>>> it: {}, avg. loss: {:.6f}, '
                         'running train acc: {:.3f}'

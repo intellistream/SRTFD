@@ -8,10 +8,10 @@ import scipy.io
 import math
 from collections import defaultdict
 import numpy as np
-data1 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault.mat')
-data25 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault25.mat')
-data11 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault_duo.mat')
-data2 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\normal.mat')
+data1 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault_120.mat')
+data25 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault_25_120.mat')
+data11 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\fault_duo_20.mat')
+data2 = scipy.io.loadmat('D:\online-continual-learning-main\online-continual-learning-main\datasets\\normal_120.mat')
 
 data = []
 data.append(data1)

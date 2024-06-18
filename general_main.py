@@ -19,8 +19,8 @@ def main(args):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     args.trick = {'labels_trick': args.labels_trick, 'separated_softmax': args.separated_softmax,
-                  'kd_trick': args.kd_trick, 'kd_trick_star': args.kd_trick_star, 'review_trick': args.review_trick,
-                  'ncm_trick': args.ncm_trick}
+                'kd_trick': args.kd_trick, 'kd_trick_star': args.kd_trick_star, 'review_trick': args.review_trick,
+                'ncm_trick': args.ncm_trick}
 
     multiple_run(args, store=args.store, save_path=args.save_path)
 
@@ -184,7 +184,7 @@ if __name__ == "__main__":
                         help='Number of events to wait if no improvement and then stop the training.')
     parser.add_argument('--cumulative_delta', dest='cumulative_delta', default=False, type=boolean_string,
                         help='If True, `min_delta` defines an increase since the last `patience` reset, '
-                             'otherwise, it defines an increase after the last event.')
+                            'otherwise, it defines an increase after the last event.')
 
     #################### SupContrast######################
     parser.add_argument('--temp', type=float, default=0.07,
