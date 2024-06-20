@@ -21,6 +21,9 @@ class continuum(object):
         x_train, y_train, labels = self.data_object.new_task(self.cur_task, cur_run=self.cur_run)
         self.cur_task += 1
         return x_train, y_train, labels
+    
+    def init_kw(self):
+        return self.data_object.init_kw()
 
     def test_data(self):
         return self.data_object.get_test_set()

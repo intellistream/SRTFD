@@ -19,7 +19,8 @@ class Original(object):
 
     def get_dims(self):
         # Get data input and output dimensions
-        print("input size {}\noutput size {}".format(self.x.shape[1], self.y.shape[1]))
+        print("input size {}\noutput size {}".format(
+            self.x.shape[1], self.y.shape[1]))
         return self.x.shape[1], self.y.shape[1]
 
     def show_sample(self, num_plot=1):
@@ -69,7 +70,8 @@ class Noisy(Original):
         next_x = deepcopy(self.x)
         self.factor = noise_factor
         if noise_type == 'Gaussian':
-            self.next_x = next_x + noise_factor * np.random.normal(loc=0.0, scale=sig, size=next_x.shape)
+            self.next_x = next_x + noise_factor * \
+                np.random.normal(loc=0.0, scale=sig, size=next_x.shape)
         elif noise_factor == 'S&P':
             # TODO implement S&P
             pass
@@ -87,7 +89,8 @@ class Blurring(Original):
         next_x = deepcopy(self.x)
         self.factor = blurry_factor
         if blurry_type == 'Gaussian':
-            self.next_x = gaussian(next_x, sigma=blurry_factor, multichannel=True)
+            self.next_x = gaussian(
+                next_x, sigma=blurry_factor, multichannel=True)
         elif blurry_type == 'Average':
             pass
             # TODO implement average
@@ -115,8 +118,8 @@ class Occlusion(Original):
 
         # self.next_x = next_x.reshape((-1, self.image_size, self.image_size))
 
-        next_x[:, max((occlusion_x - half_size), 0):min((occlusion_x + half_size), self.image_size), \
-        max((occlusion_y - half_size), 0):min((occlusion_y + half_size), self.image_size)] = 1
+        next_x[:, max((occlusion_x - half_size), 0):min((occlusion_x + half_size), self.image_size),
+               max((occlusion_y - half_size), 0):min((occlusion_y + half_size), self.image_size)] = 1
 
         self.next_x = next_x
         super().clip_minmax(self.next_x, 0, 1)
@@ -155,7 +158,8 @@ def construct_ns_single(train_x_split, train_y_split, test_x_split, test_y_split
                     tmp.show_sample()
 
                 # test
-                tmp_test = Original(test_x_split[i], test_y_split[i], color=True)
+                tmp_test = Original(
+                    test_x_split[i], test_y_split[i], color=True)
                 test_list.append(tmp_test.next_task())
                 if plot:
                     tmp_test.show_sample()
@@ -179,14 +183,14 @@ def construct_ns_single(train_x_split, train_y_split, test_x_split, test_y_split
     return train_list, test_list
 
 
-def construct_ns_multiple(train_x_split, train_y_split, val_x_rdm_split, val_y_rdm_split, test_x_split,
-                          test_y_split, ns_type, change_factors, plot):
+# def construct_ns_multiple(train_x_split, train_y_split, val_x_rdm_split, val_y_rdm_split, test_x_split,
+#                           test_y_split, ns_type, change_factors, plot):
+def construct_ns_multiple(train_x_split, train_y_split, ns_type, change_factors, num_tasks, plot):
     train_list = []
-    val_list = []
-    test_list = []
-    ns_len = len(change_factors)
-    for i in range(ns_len):
-        factor = change_factors[i]
+    # val_list = []
+    # test_list = []
+    for i in range(num_tasks):
+        factor = change_factors * i
         if factor == 0:
             ns_generator = Original
         else:
@@ -194,29 +198,39 @@ def construct_ns_multiple(train_x_split, train_y_split, val_x_rdm_split, val_y_r
         print(i, factor)
         # train
 
+        # print(ns_type, change_factors)
 
         tmp = ns_generator(train_x_split[i], train_y_split[i], color=True)
         train_list.append(tmp.next_task(factor))
         if plot:
             tmp.show_sample()
 
-        tmp_val = ns_generator(val_x_rdm_split[i], val_y_rdm_split[i], color=True)
-        val_list.append(tmp_val.next_task(factor))
+        # tmp_val = ns_generator(
+        #     val_x_rdm_split[i], val_y_rdm_split[i], color=True)
+        # val_list.append(tmp_val.next_task(factor))
 
-        tmp_test = ns_generator(test_x_split[i], test_y_split[i], color=True)
-        test_list.append(tmp_test.next_task(factor))
-    return train_list, val_list, test_list
+        # tmp_test = ns_generator(test_x_split[i], test_y_split[i], color=True)
+        # test_list.append(tmp_test.next_task(factor))
+    return train_list  # , val_list, test_list
 
 
-def construct_ns_multiple_wrapper(train_data, train_label, test_data, est_label, task_nums, img_size,
-                                  val_size, ns_type, ns_factor, plot):
-    train_data_rdm_split, train_label_rdm_split, val_data_rdm_split, val_label_rdm_split, test_data_rdm_split, test_label_rdm_split = train_val_test_split_ni(
-        train_data, train_label, test_data, est_label, task_nums, img_size,
-        val_size)
-    train_set, val_set, test_set = construct_ns_multiple(train_data_rdm_split, train_label_rdm_split,
-                                                         val_data_rdm_split, val_label_rdm_split,
-                                                         test_data_rdm_split, test_label_rdm_split,
-                                                         ns_type,
-                                                         ns_factor,
-                                                         plot=plot)
-    return train_set, val_set, test_set
+# def construct_ns_multiple_wrapper(train_data, train_label, test_data, est_label, task_nums, img_size,
+#                                   val_size, ns_type, ns_factor, plot):
+def construct_ns_multiple_wrapper(train_data, train_label, task_nums, img_size,
+                                  ns_type, ns_factor, plot):
+    # train_data_rdm_split, train_label_rdm_split, val_data_rdm_split, val_label_rdm_split, test_data_rdm_split, test_label_rdm_split = train_val_test_split_ni(
+    #     train_data, train_label, test_data, est_label, task_nums, img_size,
+    #     val_size)
+
+    train_data_rdm_split, train_label_rdm_split = train_val_test_split_ni(
+        train_data, train_label, task_nums, img_size)
+    # train_set, val_set, test_set = construct_ns_multiple(train_data_rdm_split, train_label_rdm_split,
+    #                                                      val_data_rdm_split, val_label_rdm_split,
+    #                                                      test_data_rdm_split, test_label_rdm_split,
+    #                                                      ns_type,
+    #                                                      ns_factor,
+    #                                                      plot=plot)
+
+    train_set = construct_ns_multiple(
+        train_data_rdm_split, train_label_rdm_split, ns_type, ns_factor, task_nums, plot=plot)
+    return train_set  # , val_set, test_set

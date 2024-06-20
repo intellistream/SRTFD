@@ -16,8 +16,10 @@ input_size_match = {
     'core50': [3, 128, 128],
     'mini_imagenet': [3, 84, 84],
     'openloris': [3, 50, 50],
-    'HRS': [1000],
-    'TEP': [52]
+    'HRS': [120],
+    'TEP': [52],
+    'CARLS_S': [10],
+    'CARLS_M': [10],
 }
 
 
@@ -29,6 +31,8 @@ n_classes = {
     'openloris': 69,
     'HRS': 6,
     'TEP': 22,
+    'CARLS_S': 10,
+    'CARLS_M': 5,
 }
 
 
@@ -49,6 +53,10 @@ transforms_match = {
     'HRS': transforms.Compose([
         transforms.ToTensor()]),
     'TEP': transforms.Compose([
+        transforms.ToTensor()]),
+    'CARLS_S': transforms.Compose([
+        transforms.ToTensor()]),
+    'CARLS_M': transforms.Compose([
         transforms.ToTensor()])
 }
 
@@ -77,10 +85,13 @@ def setup_architecture(params):
     elif params.data == 'openloris':
         return Reduced_ResNet18(nclass)
     elif params.data == 'HRS':
-        model = GCFAggMVC(1000, 1000, nclass, device)
+        model = GCFAggMVC(120, 120, nclass, device)
         return model
     elif params.data == 'TEP':
         model = GCFAggMVC(52, 52, nclass, device)
+        return model
+    elif params.data == 'CARLS_S' or params.data == 'CARLS_M':
+        model = GCFAggMVC(10, 10, nclass, device)
         return model
 
 

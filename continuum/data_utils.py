@@ -76,16 +76,19 @@ def shuffle_data(x, y):
     return rdm_x, rdm_y
 
 
-def train_val_test_split_ni(train_data, train_label, test_data, test_label, task_nums, img_size, val_size=0.1):
+# def train_val_test_split_ni(train_data, train_label, test_data, test_label, task_nums, img_size, val_size=0.1):
+def train_val_test_split_ni(train_data, train_label, task_nums, img_size):
     train_data_rdm, train_label_rdm = shuffle_data(train_data, train_label)
-    val_size = int(len(train_data_rdm) * val_size)
-    val_data_rdm, val_label_rdm = train_data_rdm[:val_size], train_label_rdm[:val_size]
-    train_data_rdm, train_label_rdm = train_data_rdm[val_size:], train_label_rdm[val_size:]
-    test_data_rdm, test_label_rdm = shuffle_data(test_data, test_label)
-    train_data_rdm_split = train_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
+    # val_size = int(len(train_data_rdm) * val_size)
+    # val_data_rdm, val_label_rdm = train_data_rdm[:val_size], train_label_rdm[:val_size]
+    # train_data_rdm, train_label_rdm = train_data_rdm[val_size:], train_label_rdm[val_size:]
+    train_data_rdm, train_label_rdm = train_data_rdm, train_label_rdm
+    # test_data_rdm, test_label_rdm = shuffle_data(test_data, test_label)
+    # train_data_rdm_split = train_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
+    train_data_rdm_split = train_data_rdm.reshape(task_nums, -1, img_size)
     train_label_rdm_split = train_label_rdm.reshape(task_nums, -1)
-    val_data_rdm_split = val_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
-    val_label_rdm_split = val_label_rdm.reshape(task_nums, -1)
-    test_data_rdm_split = test_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
-    test_label_rdm_split = test_label_rdm.reshape(task_nums, -1)
-    return train_data_rdm_split, train_label_rdm_split, val_data_rdm_split, val_label_rdm_split, test_data_rdm_split, test_label_rdm_split
+    # val_data_rdm_split = val_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
+    # val_label_rdm_split = val_label_rdm.reshape(task_nums, -1)
+    # test_data_rdm_split = test_data_rdm.reshape(task_nums, -1, img_size, img_size, 3)
+    # test_label_rdm_split = test_label_rdm.reshape(task_nums, -1)
+    return train_data_rdm_split, train_label_rdm_split#, val_data_rdm_split, val_label_rdm_split, test_data_rdm_split, test_label_rdm_split

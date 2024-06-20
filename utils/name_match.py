@@ -6,7 +6,10 @@ from continuum.dataset_scripts.mini_imagenet import Mini_ImageNet
 from continuum.dataset_scripts.openloris import OpenLORIS
 from continuum.dataset_scripts.HRS import HRS
 from continuum.dataset_scripts.TEP import TEP
+from continuum.dataset_scripts.CARLS_S import CARLS_S
+from continuum.dataset_scripts.CARLS_M import CARLS_M
 from agents.exp_replay import ExperienceReplay
+from agents.srtfd import SRTFD
 from agents.agem import AGEM
 from agents.ewc_pp import EWC_pp
 from agents.cndpm import Cndpm
@@ -31,9 +34,12 @@ data_objects = {
     'openloris': OpenLORIS,
     'HRS': HRS,
     'TEP': TEP,
+    'CARLS_S': CARLS_S,
+    'CARLS_M': CARLS_M
 }
 
 agents = {
+    'SRTFD': SRTFD,
     'ER': ExperienceReplay,
     'EWC': EWC_pp,
     'AGEM': AGEM,
