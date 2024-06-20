@@ -25,7 +25,7 @@ class HRS(DatasetBase):
         fault = scipy.io.loadmat(os.path.join('data', 'HRS', 'fault_V2.mat'))
         for i in range(1, 6):
             self.data.append(np.nan_to_num(np.array(fault[f'Fault{i}'])))
-
+            
     def setup(self):
         self.test_set = []
         if self.scenario == 'nc':
@@ -43,13 +43,8 @@ class HRS(DatasetBase):
                         test_data[start:end] = t_set[np.random.choice(
                             t_set.shape[0], size=end - start, replace=False)]
                         test_label[start:end] = i + 1
-
-                if self.scenario == 'vc':
-                    noise = np.random.normal(0, cur * 0.05, test_data.shape)
-                    test_data = test_data + noise
-
                 self.test_set.append((test_data, test_label))
-        
+
         if self.scenario == 'vc':
 
             labels = [np.zeros(self.data[0].shape[0], dtype=int)]
@@ -60,7 +55,7 @@ class HRS(DatasetBase):
             data = np.concatenate(self.data, axis=0)
 
             self.test_set = construct_ns_multiple_wrapper(
-                data[1:], labels[1:], self.task_nums, 120, self.params.ns_type, self.params.ns_factor, plot=self.params.plot_sample)
+                data, labels, self.task_nums, 52, self.params.ns_type, self.params.ns_factor, plot=self.params.plot_sample)
 
 
     def new_task(self, cur_task, **kwargs):
