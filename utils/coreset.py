@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import pairwise_distances
 
 
-class Coreset_Greedy:
+class CoresetGreedy:
     def __init__(self, data_pts, p_data_pts, labels, p_labels):
 
         if p_data_pts.size == 0:
