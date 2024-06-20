@@ -19,8 +19,8 @@ def main(args):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
     args.trick = {'labels_trick': args.labels_trick, 'separated_softmax': args.separated_softmax,
-                'kd_trick': args.kd_trick, 'kd_trick_star': args.kd_trick_star, 'review_trick': args.review_trick,
-                'ncm_trick': args.ncm_trick}
+                  'kd_trick': args.kd_trick, 'kd_trick_star': args.kd_trick_star, 'review_trick': args.review_trick,
+                  'ncm_trick': args.ncm_trick}
 
     multiple_run(args, store=args.store, save_path=args.save_path)
 
@@ -51,9 +51,9 @@ if __name__ == "__main__":
     parser.add_argument('--save-path', dest='save_path', default=None)
 
     ######################## Agent#########################
-    parser.add_argument('--agent', dest='agent', default='ER',
+    parser.add_argument('--agent', dest='agent', default='AGEM',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
-                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR'],
+                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
                         help='Agent selection  (default: %(default)s)')
     parser.add_argument('--update', dest='update', default='random', choices=['random', 'GSS', 'ASER'],
                         help='Update method  (default: %(default)s)')
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                         help='weight_decay')
 
     ######################## Data#########################
-    parser.add_argument('--num_tasks', dest='num_tasks', default=6,
+    parser.add_argument('--num_tasks', dest='num_tasks', default=22,
                         type=int,
                         help='Number of tasks (default: %(default)s), OpenLORIS num_tasks is predefined')
     parser.add_argument('--fix_order', dest='fix_order', default=False,
@@ -88,12 +88,12 @@ if __name__ == "__main__":
     parser.add_argument('--plot_sample', dest='plot_sample', default=False,
                         type=boolean_string,
                         help='In NI scenario, should sample images be plotted (default: %(default)s)')
-    parser.add_argument('--data', dest='data', default="HRS",
+    parser.add_argument('--data', dest='data', default="TEP",
                         help='Path to the dataset. (default: %(default)s)')
-    parser.add_argument('--cl_type', dest='cl_type', default="nc", choices=['nc', 'ni'],
+    parser.add_argument('--cl_type', dest='cl_type', default="nc", choices=['nc', 'vc'],
                         help='Continual learning type: new class "nc" or new instance "ni". (default: %(default)s)')
-    parser.add_argument('--ns_factor', dest='ns_factor', nargs='+',
-                        default=(0.0, 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6), type=float,
+    parser.add_argument('--ns_factor', dest='ns_factor',
+                        default=0.4, type=float,
                         help='Change factor for non-stationary data(default: %(default)s)')
     parser.add_argument('--ns_type', dest='ns_type', default='noise', type=str, choices=['noise', 'occlusion', 'blur'],
                         help='Type of non-stationary (default: %(default)s)')
@@ -102,6 +102,12 @@ if __name__ == "__main__":
     parser.add_argument('--online', dest='online', default=True,
                         type=boolean_string,
                         help='If False, offline training will be performed (default: %(default)s)')
+    parser.add_argument('--n', dest='n',
+                        type=int,
+                        help='Total number of samples', default=960)
+    parser.add_argument('--f', dest='f',
+                        type=int,
+                        help='Total number of faulty samples', default=160)
 
     ######################## ER#########################
     parser.add_argument('--mem_size', dest='mem_size', default=1000,
@@ -184,7 +190,7 @@ if __name__ == "__main__":
                         help='Number of events to wait if no improvement and then stop the training.')
     parser.add_argument('--cumulative_delta', dest='cumulative_delta', default=False, type=boolean_string,
                         help='If True, `min_delta` defines an increase since the last `patience` reset, '
-                            'otherwise, it defines an increase after the last event.')
+                        'otherwise, it defines an increase after the last event.')
 
     #################### SupContrast######################
     parser.add_argument('--temp', type=float, default=0.07,

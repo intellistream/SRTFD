@@ -13,7 +13,7 @@ class Cndpm(ContinualLearner):
         self.model = model
 
 
-    def train_learner(self, x_train, y_train):
+    def train_learner(self, x_train, y_train, pseduo_x=[], pseudo_y=[], init_train=False):
         # set up loader
         train_dataset = dataset_transform(x_train, y_train, transform=transforms_match[self.data])
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,

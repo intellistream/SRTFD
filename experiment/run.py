@@ -52,17 +52,34 @@ def multiple_run(params, store=False, save_path=None):
         # prepare val data loader
         test_loaders = setup_test_loader(data_continuum.test_data(), params)
         if params.online:
+            # initial training
+            x_train, y_train = data_continuum.init_kw()
+            print("----------- initial training -------------")
+            print('size: {}, {}'.format(x_train.shape, y_train.shape))
+            agent.train_learner(x_train, y_train, init_train=True)
+
             for i, (x_train, y_train, labels) in enumerate(data_continuum):
-                print("-----------run {} training batch {}-------------".format(run, i))
-                print('size: {}, {}'.format(x_train.shape, y_train.shape))
-                print("current label: {}".format(labels))
                # x_train, y_train = Cluster(x_train, y_train, sample_rate = 0.5)
 
-                agent.train_learner(
-                    x_train, y_train, agent.pseudo_x, agent.pseudo_y, alpha=None, coreset_ratio=1)
-                acc_array = agent.evaluate(test_loaders, i, conf_threshold={0: 0.9, 1: 0.9, 2: 0.9, 3: 0.9, 4: 0.9, 5: 0.9}, uncertain_threshold={
-                                           0: 0.05, 1: 0.05, 2: 0.05, 3: 0.05, 4: 0.05, 5: 0.05})
+                print("-----------run {} task {}-------------".format(run, i))
+
+                if params.agent == 'SRTFD':
+                    acc_array = agent.evaluate(test_loaders, i, conf_threshold=0.0, uncertain_threshold=1)
+                else:
+                    acc_array = agent.evaluate(test_loaders, i)
+
                 tmp_acc.append(acc_array)
+
+                print('train size: {}, {}'.format(x_train.shape, y_train.shape))
+                print("current label: {}".format(labels))
+
+                if params.agent == 'SRTFD':
+                    agent.train_learner(
+                        x_train, y_train, pseudo_x=agent.pseudo_x, pseudo_y=agent.pseudo_y, alpha=None, coreset_ratio=1)
+                else:
+                    agent.train_learner(
+                        x_train, y_train)
+
             run_end = time.time()
             print(
                 "-----------run {}-----------avg_end_acc {}-----------train time {}".format(run, np.mean(tmp_acc[-1]),

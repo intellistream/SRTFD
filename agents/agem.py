@@ -15,13 +15,14 @@ class AGEM(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train):
+    def train_learner(self, x_train, y_train, pseduo_x=[], pseudo_y=[], init_train=False):
         self.before_train(x_train, y_train)
 
         # set up loader
         train_dataset = dataset_transform(x_train, y_train, transform=transforms_match[self.data])
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,
                                        drop_last=True)
+        
         # set up model
         self.model = self.model.train()
 
@@ -80,7 +81,8 @@ class AGEM(ContinualLearner):
                                 p.grad.data.copy_(g)
                     self.opt.step()
                 # update mem
-                self.buffer.update(batch_x, batch_y)
+                if not init_train:
+                    self.buffer.update(batch_x, batch_y)
 
                 if i % 1 == 1 and self.verbose:
                     print(

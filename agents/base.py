@@ -11,6 +11,7 @@ from utils.loss import SupConLoss
 import pickle
 from models.FocalLoss import FocalLoss
 from utils.con_m import conf_matrix
+from utils.setup_elements import n_classes
 
 
 class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
@@ -99,7 +100,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def criterion(self, logits, labels):
         labels = labels.clone()
         ce = torch.nn.CrossEntropyLoss(reduction='mean')
-        FC = FocalLoss(6)
+        FC = FocalLoss(n_classes[self.params.data])
         if self.params.trick['labels_trick']:
             unq_lbls = labels.unique().sort()[0]
             for lbl_idx, lbl in enumerate(unq_lbls):
@@ -124,7 +125,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def forward(self, x):
         return self.model.forward(x)
 
-    def evaluate(self, test_loaders, curr_task, conf_threshold={}, uncertain_threshold={}):
+    def evaluate(self, test_loaders, curr_task, conf_threshold=0.95, uncertain_threshold=0.05):
         self.model.eval()
         acc_array = np.zeros(len(test_loaders))
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
@@ -164,8 +165,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                 predict_lb = []
 
             count = 0
-            # self.pseudo_x = np.array([])
-            # self.pseudo_y = np.array([])
+
             self.pseudo_x = []
             self.pseudo_y = []
             for task, test_loader in enumerate(test_loaders):
@@ -211,13 +211,9 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             entropy = - \
                                 torch.sum(
                                     probs * torch.log2(probs + 1e-10), dim=1)
-                            preds = pred_label.tolist()
-                            for i in range(len(batch_x)):
-                                c_t = conf_threshold.get(preds[i], 0)
-                                u_t = uncertain_threshold.get(
-                                    preds[i], 100)
 
-                                if conf[i] > c_t and entropy[i] < u_t:
+                            for i in range(len(batch_x)):
+                                if conf[i] > conf_threshold and entropy[i] < uncertain_threshold:
                                     self.pseudo_x.append(batch_x[i])
                                     self.pseudo_y.append(batch_y[i])
 
@@ -257,7 +253,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         else:
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
-                
+
                 acc_array[task] = acc.avg()
             conf_matrix(accuracy11, Label11)
 

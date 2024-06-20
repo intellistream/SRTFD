@@ -216,6 +216,7 @@ class HRS(DatasetBase):
                 cur = cur  + 1
                 x_test1 = np.concatenate(x_test, axis=0)
                 y_test1 = np.concatenate(y_test, axis=0)
+                print(len(y_test1))
                 self.test_set.append((x_test1,  y_test1))
             
            # for i in range(6):

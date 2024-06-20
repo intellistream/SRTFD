@@ -20,7 +20,6 @@ class SupContrastReplay(ContinualLearner):
             RandomHorizontalFlip(),
             ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
             RandomGrayscale(p=0.2)
-
         )
 
     def train_learner(self, x_train, y_train):
