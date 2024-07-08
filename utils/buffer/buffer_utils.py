@@ -42,13 +42,13 @@ def temp_retrieve(buffer, num_retrieve, excl_indices=None, return_indices=False)
 
     indices = []
 
-    for label in unique_cls:
+    '''for label in unique_cls:
         label_indices = np.where(y == label)[0]
         indices.extend(np.random.choice(
             label_indices, size=min_cls, replace=False))
 
     x = x[indices]
-    y = y[indices]
+    y = y[indices]'''
 
     if return_indices:
         return x, y, indices

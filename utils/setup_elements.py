@@ -2,6 +2,7 @@ import torch
 from models.resnet import Reduced_ResNet18, SupConResNet
 from models.transformers import TransformerFeatureExtractor
 from models.network import GCFAggMVC
+from models.GurModel import NetworkModel
 from torchvision import transforms
 import torch.nn as nn
 
@@ -86,9 +87,11 @@ def setup_architecture(params):
         return Reduced_ResNet18(nclass)
     elif params.data == 'HRS':
         model = GCFAggMVC(120, 120, nclass, device)
+        #model = NetworkModel(120, nclass)
         return model
     elif params.data == 'TEP':
         model = GCFAggMVC(52, 52, nclass, device)
+        #model = NetworkModel(52, nclass)
         return model
     elif params.data == 'CARLS_S' or params.data == 'CARLS_M':
         model = GCFAggMVC(10, 10, nclass, device)

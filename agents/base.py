@@ -9,9 +9,12 @@ from torch.utils.data import TensorDataset, DataLoader
 import copy
 from utils.loss import SupConLoss
 import pickle
-from models.FocalLoss import FocalLoss
+#from models.FocalLoss import FocalLoss
 from utils.con_m import conf_matrix
 from utils.setup_elements import n_classes
+from sklearn.metrics import recall_score
+from sklearn import metrics
+from utils.recall_loss import RecallLoss, FocalLoss
 
 
 class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
@@ -100,7 +103,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def criterion(self, logits, labels):
         labels = labels.clone()
         ce = torch.nn.CrossEntropyLoss(reduction='mean')
-        FC = FocalLoss(n_classes[self.params.data])
+        #FC = FocalLoss(n_classes[self.params.data])
+        RL = FocalLoss()
         if self.params.trick['labels_trick']:
             unq_lbls = labels.unique().sort()[0]
             for lbl_idx, lbl in enumerate(unq_lbls):
@@ -119,8 +123,9 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             return SC(logits, labels)
         else:
             loss_ce = ce(logits, labels)
-            loss_FC = FC(logits, labels)
-            return loss_ce
+            #loss_FC = FC(logits, labels)
+            loss_re = RL(logits, labels)
+            return loss_re
 
     def forward(self, x):
         return self.model.forward(x)
@@ -128,6 +133,11 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def evaluate(self, test_loaders, curr_task, conf_threshold=0.95, uncertain_threshold=0.05):
         self.model.eval()
         acc_array = np.zeros(len(test_loaders))
+        recall1 = np.zeros(len(test_loaders))
+        #p = np.zeros(len(test_loaders))
+        f1 = np.zeros(len(test_loaders))
+        g_mean = np.zeros(len(test_loaders))
+        support_micro = np.zeros(len(test_loaders))
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
             exemplar_means = {}
             cls_exemplar = {cls: [] for cls in self.old_labels}
@@ -213,10 +223,11 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                                     probs * torch.log2(probs + 1e-10), dim=1)
 
                             for i in range(len(batch_x)):
-                                if conf[i] > conf_threshold and entropy[i] < uncertain_threshold:
+                                if conf[i] > conf_threshold and conf[i] < 0.05: #and entropy[i] < uncertain_threshold:
                                     self.pseudo_x.append(batch_x[i])
                                     self.pseudo_y.append(batch_y[i])
-
+                                    
+                            #print(len(self.pseudo_x))
                         accuracy11 = torch.cat((accuracy11, pred_label), dim=0)
                         # print(len(accuracy))
                         correct_cnt = (pred_label == batch_y).sum(
@@ -253,9 +264,14 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         else:
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
-
                 acc_array[task] = acc.avg()
-            conf_matrix(accuracy11, Label11)
+                recall1[task] =recall_score(accuracy11, Label11, average='macro')
+                p, recall, f1, support_micro = metrics.precision_recall_fscore_support(accuracy11,Label11)
+                f1[task] = 2 * p.mean() * recall.mean() / (p.mean() + recall.mean())
+                g_mean[task] = np.sqrt(p.mean() * recall.mean())
+            print('recall {}, f1 {}, g_mean {}'.format(np.mean(recall1),np.mean(f1), np.mean(g_mean)))
+            #print(recall,f1)
+            #conf_matrix(accuracy11, Label11)
 
         print(acc_array)
 
@@ -283,4 +299,4 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             print(self.bias_norm_new)
             with open('confusion', 'wb') as fp:
                 pickle.dump([correct_lb, predict_lb], fp)
-        return acc_array
+        return acc_array, recall

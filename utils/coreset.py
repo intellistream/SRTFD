@@ -31,6 +31,7 @@ class CoresetGreedy:
 
     def sample(self, sample_ratio):
         sample_size = int(self.dset_size * sample_ratio)
+        print("sample_size:{}".format(sample_size))
 
         new_batch = {label: [] for label in np.unique(self.labels)}
 
@@ -48,10 +49,11 @@ class CoresetGreedy:
             self.update_dist([ind])
 
             new_batch[self.labels[ind]].append(ind)
+            #print(new_batch)
 
         min_count = min(len(lst)for lst in new_batch.values())
 
         new_balanced_batch = np.array([item for sublist in new_batch.values()
-                                       for item in sublist[:min_count]])
-
+                                    for item in sublist[:min_count]])
+        #print(new_balanced_batch)
         return new_balanced_batch

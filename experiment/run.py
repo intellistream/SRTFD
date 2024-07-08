@@ -42,6 +42,7 @@ def multiple_run(params, store=False, save_path=None):
 
     for run in range(params.num_runs):
         tmp_acc = []
+        tmp_rec = []
         run_start = time.time()
         data_continuum.new_run()
         model = setup_architecture(params)
@@ -51,39 +52,52 @@ def multiple_run(params, store=False, save_path=None):
         agent = agents[params.agent](model, opt, params)
         # prepare val data loader
         test_loaders = setup_test_loader(data_continuum.test_data(), params)
+        TrainTime = 0
+        TestTime = 0
         if params.online:
             # initial training
+            run_start = time.time()
             x_train, y_train = data_continuum.init_kw()
             print("----------- initial training -------------")
-            print('size: {}, {}'.format(x_train.shape, y_train.shape))
+            print('train size: {}, {}'.format(x_train.shape, y_train.shape))
+            initime_strat = time.time()
             agent.train_learner(x_train, y_train, init_train=True)
-
+            initime_end = time.time()
+            TrainTime = initime_end - initime_strat
             for i, (x_train, y_train, labels) in enumerate(data_continuum):
-               # x_train, y_train = Cluster(x_train, y_train, sample_rate = 0.5)
 
                 print("-----------run {} task {}-------------".format(run, i))
 
+                Test_time = time.time()
                 if params.agent == 'SRTFD':
-                    acc_array = agent.evaluate(test_loaders, i, conf_threshold=0.0, uncertain_threshold=1)
+                    acc_array, rec_array = agent.evaluate(test_loaders, i, conf_threshold=0.95, uncertain_threshold=5)
                 else:
-                    acc_array = agent.evaluate(test_loaders, i)
+                    acc_array, rec_array = agent.evaluate(test_loaders, i)
 
                 tmp_acc.append(acc_array)
-
+                tmp_rec.append(rec_array)
+                Test_time_end = time.time()
+                
+                TestTime  = TestTime + (Test_time_end - Test_time)
+                
                 print('train size: {}, {}'.format(x_train.shape, y_train.shape))
                 print("current label: {}".format(labels))
-
+                
+                train_time_start = time.time()
                 if params.agent == 'SRTFD':
                     agent.train_learner(
-                        x_train, y_train, pseudo_x=agent.pseudo_x, pseudo_y=agent.pseudo_y, alpha=None, coreset_ratio=1)
+                        x_train, y_train, pseudo_x=agent.pseudo_x, pseudo_y=agent.pseudo_y, alpha=0.5, coreset_ratio=0.5)
                 else:
                     agent.train_learner(
                         x_train, y_train)
-
+                train_time_end = time.time()
+                TrainTime = TrainTime + (train_time_end - train_time_start)
+                     
             run_end = time.time()
+            
             print(
-                "-----------run {}-----------avg_end_acc {}-----------train time {}".format(run, np.mean(tmp_acc[-1]),
-                                                                                            run_end - run_start))
+                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]),np.mean(tmp_rec[-1]),
+                                                                                            TrainTime, TestTime, run_end-run_start))
             accuracy_list.append(np.array(tmp_acc))
         else:
             x_train_offline = []
@@ -98,7 +112,7 @@ def multiple_run(params, store=False, save_path=None):
             print('size: {}, {}'.format(
                 x_train_offline.shape, y_train_offline.shape))
             agent.train_learner(x_train_offline, y_train_offline)
-            acc_array = agent.evaluate(test_loaders)
+            acc_array, rec_array = agent.evaluate(test_loaders)
             accuracy_list.append(acc_array)
 
     accuracy_array = np.array(accuracy_list)

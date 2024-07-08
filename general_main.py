@@ -51,22 +51,22 @@ if __name__ == "__main__":
     parser.add_argument('--save-path', dest='save_path', default=None)
 
     ######################## Agent#########################
-    parser.add_argument('--agent', dest='agent', default='AGEM',
+    parser.add_argument('--agent', dest='agent', default='ER',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
-                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
+                                'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
                         help='Agent selection  (default: %(default)s)')
     parser.add_argument('--update', dest='update', default='random', choices=['random', 'GSS', 'ASER'],
-                        help='Update method  (default: %(default)s)')
+                        help='Update method  (default: %(wqlt)s)')
     parser.add_argument('--retrieve', dest='retrieve', default='temp', choices=['MIR', 'random', 'ASER', 'match', 'mem_match', 'temp'],
-                        help='Retrieve method  (default: %(default)s)')
+                        help='Retrieve method  (default: wqault)s)')
 
-    ######################## Optimizer#########################
+    ######################## Optimizer###################wq#
     parser.add_argument('--optimizer', dest='optimizer', default='SGD', choices=['SGD', 'Adam'],
                         help='Optimizer (default: %(default)s)')
-    parser.add_argument('--learning_rate', dest='learning_rate', default=0.001,
+    parser.add_argument('--learning_rate', dest='learning_rate', default=0.0001,
                         type=float,
                         help='Learning_rate (default: %(default)s)')
-    parser.add_argument('--epoch', dest='epoch', default=1,
+    parser.add_argument('--epoch', dest='epoch', default=5,
                         type=int,
                         help='The number of epochs used for one task. (default: %(default)s)')
     parser.add_argument('--batch', dest='batch', default=10,
@@ -75,11 +75,11 @@ if __name__ == "__main__":
     parser.add_argument('--test_batch', dest='test_batch', default=10,
                         type=int,
                         help='Test batch size (default: %(default)s)')
-    parser.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.01,
+    parser.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.001,
                         help='weight_decay')
 
     ######################## Data#########################
-    parser.add_argument('--num_tasks', dest='num_tasks', default=22,
+    parser.add_argument('--num_tasks', dest='num_tasks', default=6,
                         type=int,
                         help='Number of tasks (default: %(default)s), OpenLORIS num_tasks is predefined')
     parser.add_argument('--fix_order', dest='fix_order', default=False,
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--plot_sample', dest='plot_sample', default=False,
                         type=boolean_string,
                         help='In NI scenario, should sample images be plotted (default: %(default)s)')
-    parser.add_argument('--data', dest='data', default="TEP",
+    parser.add_argument('--data', dest='data', default="HRS",
                         help='Path to the dataset. (default: %(default)s)')
     parser.add_argument('--cl_type', dest='cl_type', default="nc", choices=['nc', 'vc'],
                         help='Continual learning type: new class "nc" or new instance "ni". (default: %(default)s)')
@@ -104,10 +104,10 @@ if __name__ == "__main__":
                         help='If False, offline training will be performed (default: %(default)s)')
     parser.add_argument('--n', dest='n',
                         type=int,
-                        help='Total number of samples', default=960)
+                        help='Total number of samples', default=6055)
     parser.add_argument('--f', dest='f',
                         type=int,
-                        help='Total number of faulty samples', default=160)
+                        help='Total number of faulty samples', default=1932)
 
     ######################## ER#########################
     parser.add_argument('--mem_size', dest='mem_size', default=1000,

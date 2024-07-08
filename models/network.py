@@ -41,29 +41,20 @@ class GCFAggMVC(nn.Module):
         self.encoders = Encoder(input_size, low_feature_dim).to(device)
         self.decoders = Decoder(input_size, low_feature_dim).to(device)
         self.fc = nn.Linear(low_feature_dim, num_class)
-        
-        # self.Specific_view = nn.Sequential(
-        #     nn.Linear(low_feature_dim, high_feature_dim),
-        # )
-        # self.Common_view = nn.Sequential(
-        #     nn.Linear(low_feature_dim, high_feature_dim),
-        # )
+    
         self.TransformerEncoderLayer = nn.TransformerEncoderLayer(d_model=low_feature_dim, nhead=1, dim_feedforward=256)
         self.TransformerEncoder = nn.TransformerEncoder(self.TransformerEncoderLayer, num_layers=1)
     def forward(self, x):
         x = x.reshape(x.shape[0],-1)
         x = x.to(torch.float32)
         z = self.encoders(x)
-       # h = normalize(self.Specific_view(z), dim=1)
         xr = self.decoders(z)
         commonz = self.TransformerEncoderLayer(xr)
         commonz = self.TransformerEncoder(commonz)
         y = self.fc(commonz)
-       # x = x.to(torch.float64)
         return y
     def GCFAgg(self, xs):
         z = self.encoders(xs)
         commonz = torch.cat(z, 1)
         commonz, S = self.TransformerEncoderLayer(commonz)
-      #  commonz = normalize(self.Common_view(commonz), dim=1)
         return commonz, S

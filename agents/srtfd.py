@@ -19,10 +19,11 @@ class SRTFD(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha=None, coreset_ratio=1, init_train=False):
+    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha=0.8, coreset_ratio=0.8, init_train=False):
         self.before_train(x_train, y_train)
+        Beta = 0.5
         print('before size: {}, {}'.format(x_train.shape, y_train.shape))
-        x_train, y_train = KL_div(x_train, y_train, self.buffer, 15)
+        x_train, y_train = KL_div(x_train, y_train, self.buffer,6)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
 
         pseudo_x = np.array(pseudo_x)
@@ -63,43 +64,47 @@ class SRTFD(ContinualLearner):
 
         # setup tracker
         losses_batch = AverageMeter()
+        losses_batch_ps = AverageMeter()
         losses_mem = AverageMeter()
         acc_batch = AverageMeter()
+        acc_batch_ps = AverageMeter()
         acc_mem = AverageMeter()
 
         for ep in range(self.epoch):
 
             if alpha is not None:
-                for i, batch_data in enumerate(ps_train_loader):
+                for i, batch_data_ps in enumerate(ps_train_loader):
                     # batch update
-                    batch_x, batch_y = batch_data
+                    batch_x_ps, batch_y_ps = batch_data_ps
+                    #print(batch_x.shape)
 
-                    batch_x = maybe_cuda(batch_x, self.cuda)
-                    batch_y = maybe_cuda(batch_y, self.cuda)
+                    batch_x_ps = maybe_cuda(batch_x_ps, self.cuda)
+                    batch_y_ps = maybe_cuda(batch_y_ps, self.cuda)
                     for j in range(self.mem_iters):
-                        logits = self.model.forward(batch_x)
-                        loss = self.criterion(logits, batch_y)
+                        logits_ps = self.model.forward(batch_x_ps)
+                        loss_ps = self.criterion(logits_ps, batch_y_ps)
                         if self.params.trick['kd_trick']:
-                            loss = 1 / (self.task_seen + 1) * loss + (1 - 1 / (self.task_seen + 1)) * \
-                                self.kd_manager.get_kd_loss(logits, batch_x)
+                            loss_ps = 1 / (self.task_seen + 1) * loss_ps + (1 - 1 / (self.task_seen + 1)) * \
+                                self.kd_manager.get_kd_loss(logits_ps, batch_x_ps)
                         if self.params.trick['kd_trick_star']:
-                            loss = 1/((self.task_seen + 1) ** 0.5) * loss + \
+                            loss_ps = 1/((self.task_seen + 1) ** 0.5) * loss_ps + \
                                 (1 - 1/((self.task_seen + 1) ** 0.5)) * \
-                                self.kd_manager.get_kd_loss(logits, batch_x)
-                        loss = alpha * loss
-                        _, pred_label = torch.max(logits, 1)
+                                self.kd_manager.get_kd_loss(logits_ps, batch_x_ps)
+                        loss_ps = alpha * loss_ps
+                        _, pred_label_ps = torch.max(logits_ps, 1)
                         # print(pred_label, batch_y)
-                        correct_cnt = (pred_label == batch_y).sum(
-                        ).item() / batch_y.size(0)
+                        correct_cnt = (pred_label_ps == batch_y_ps).sum(
+                        ).item() / batch_y_ps.size(0)
                         # update tracker
-                        acc_batch.update(correct_cnt, batch_y.size(0))
-                        losses_batch.update(loss, batch_y.size(0))
+                        acc_batch_ps.update(correct_cnt, batch_y_ps.size(0))
+                        losses_batch_ps.update(loss_ps, batch_y_ps.size(0))
                         # backward
                         self.opt.zero_grad()
-                        loss.requires_grad_(True)
-                        loss.backward()
-
+                        loss_ps.requires_grad_(True)
+                        loss_ps.backward()
                         self.opt.step()
+                    if not init_train and ep == 0:
+                        self.buffer.update(batch_x_ps, batch_y_ps)
 
             for i, batch_data in enumerate(train_loader):
                 # batch update
@@ -117,7 +122,7 @@ class SRTFD(ContinualLearner):
                             (1 - 1/((self.task_seen + 1) ** 0.5)) * \
                             self.kd_manager.get_kd_loss(logits, batch_x)
                     if alpha is not None:
-                        loss = (1 - alpha) * loss
+                        loss = loss
                     _, pred_label = torch.max(logits, 1)
                     correct_cnt = (pred_label == batch_y).sum(
                     ).item() / batch_y.size(0)
@@ -131,6 +136,7 @@ class SRTFD(ContinualLearner):
 
                     # mem update
                     mem_x, mem_y = self.buffer.retrieve()
+                    #print(mem_x.size(0))
                     if mem_x.size(0) > 0:
                         mem_x = maybe_cuda(mem_x, self.cuda)
                         mem_y = maybe_cuda(mem_y, self.cuda)
@@ -164,6 +170,11 @@ class SRTFD(ContinualLearner):
                         '==>>> it: {}, avg. loss: {:.6f}, '
                         'running train acc: {:.3f}'
                         .format(i, losses_batch.avg(), acc_batch.avg())
+                    )
+                    print(
+                        '==>>> it: {}, avg. loss: {:.6f}, '
+                        'running pstrain acc: {:.3f}'
+                        .format(i, losses_batch_ps.avg(), acc_batch_ps.avg())
                     )
                     print(
                         '==>>> it: {}, mem avg. loss: {:.6f}, '

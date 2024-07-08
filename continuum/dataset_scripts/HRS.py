@@ -8,7 +8,6 @@ from continuum.non_stationary import construct_ns_multiple_wrapper, test_ns
 import os
 import random
 
-
 class HRS(DatasetBase):
     def __init__(self, scenario, params):
         dataset = 'HRS'
@@ -29,21 +28,19 @@ class HRS(DatasetBase):
     def setup(self):
         self.test_set = []
         if self.scenario == 'nc':
+            num = 5
             for cur, t_set in enumerate(self.data):
                 test_label = np.zeros(self.params.n, dtype=int)
                 test_data = self.data[0][np.random.choice(
                     self.data[0].shape[0], size=self.params.n, replace=False)]
-
+                
                 if cur != 0:
-                    n = self.params.f // cur
+                    n = len(t_set) // num 
                     for i in range(cur):
-                        start = self.params.n - self.params.f + n * i
-                        end = start + n if i + 1 != cur else self.params.n
-
-                        test_data[start:end] = t_set[np.random.choice(
-                            t_set.shape[0], size=end - start, replace=False)]
-                        test_label[start:end] = i + 1
+                        test_data[n*i:n*(i+1)] = t_set[n*i:n*(i+1)]
+                        test_label[n*i:n*(i+1)] = i + 1
                 self.test_set.append((test_data, test_label))
+            num = - 1
 
         if self.scenario == 'vc':
 
@@ -60,9 +57,15 @@ class HRS(DatasetBase):
 
     def new_task(self, cur_task, **kwargs):
         x_train, y_train = self.test_set[cur_task]
+        
+        if cur_task !=0:
+            nonzero_positions = np.nonzero(y_train)[0]
+            x_train = x_train[nonzero_positions]
+            y_train = y_train[nonzero_positions]
+            #print(y_train)
 
         selected_indices = random.sample(range(len(y_train)), k=int(
-            self.params.n * random.uniform(0.25, 0.50)))
+            len(y_train) * random.uniform(0.5, 0.7)))
 
         x_train = x_train[selected_indices]
         y_train = y_train[selected_indices]

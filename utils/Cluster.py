@@ -95,6 +95,13 @@ def find_zero_indexes(arr):
     
     return indexes
 
+def find_indexes_less_equal(arr, threshold):
+    indexes = []
+    for i in range(len(arr)):
+        if arr[i] <= threshold:
+            indexes.append(i)
+    return indexes
+
 def KL_div(x_train, y_train, buffer, n_clusters):
     class_Buffer = np.unique(buffer.buffer_label) 
     x_train_clusterdata = x_train.reshape(x_train.shape[0],-1)
@@ -128,6 +135,7 @@ def KL_div(x_train, y_train, buffer, n_clusters):
         max_val = np.max(KL_A)
         normalized_arr = (KL_A - min_val) / (max_val - min_val)
         zero_positions = find_zero_indexes(normalized_arr)
+        #zero_positions = find_indexes_less_equal(normalized_arr, 0.5)
         set2 = set(zero_positions)
         classss = [i for i in range(n_clusters)]
         select_class= [x for x in classss if x not in set2]
