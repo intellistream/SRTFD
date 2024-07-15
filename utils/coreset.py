@@ -51,7 +51,7 @@ class CoresetGreedy:
             new_batch[self.labels[ind]].append(ind)
             #print(new_batch)
 
-        min_count = min(len(lst)for lst in new_batch.values())
+        min_count = min(len(lst) for lst in new_batch.values() if len(lst) > 0)
 
         new_balanced_batch = np.array([item for sublist in new_batch.values()
                                     for item in sublist[:min_count]])

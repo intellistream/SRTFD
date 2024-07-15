@@ -6,6 +6,7 @@ import numpy as np
 from continuum.dataset_scripts.dataset_base import DatasetBase
 from continuum.non_stationary import construct_ns_multiple_wrapper, test_ns
 from glob import iglob
+from collections import deque
 
 
 class TEP(DatasetBase):
@@ -35,12 +36,12 @@ class TEP(DatasetBase):
                                 for i in range(1, len(temp))], axis=0)
         self.data = [np.concatenate([temp[0], normal], axis=0)]
 
-        self.data += [temp[i][160:] for i in range(1, len(temp))]
+        self.data += [deque(temp[i][160:]) for i in range(1, len(temp))]
 
     def setup(self):
         self.test_set = []
         if self.scenario == 'nc':
-            for cur, t_set in enumerate(self.data):
+            for cur in range(len(self.data)):
                 test_label = np.zeros(self.params.n, dtype=int)
                 test_data = self.data[0][np.random.choice(
                     self.data[0].shape[0], size=self.params.n, replace=False)]
@@ -51,8 +52,8 @@ class TEP(DatasetBase):
                         start = self.params.n - self.params.f + n * i
                         end = start + n if i + 1 != cur else self.params.n
 
-                        test_data[start:end] = t_set[np.random.choice(
-                            t_set.shape[0], size=end - start, replace=False)]
+                        test_data[start:end] = [self.data[i+1].popleft()
+                                                for _ in range(end-start)]
                         test_label[start:end] = i + 1
                 self.test_set.append((test_data, test_label))
 
@@ -60,7 +61,7 @@ class TEP(DatasetBase):
 
             labels = [np.zeros(self.data[0].shape[0], dtype=int)]
             for i in range(1, len(self.data)):
-                labels.append(np.full(self.data[i].shape[0], i, dtype=int))
+                labels.append(np.full(len(self.data[i]), i, dtype=int))
 
             labels = np.concatenate(labels, axis=0)
             data = np.concatenate(self.data, axis=0)
@@ -71,8 +72,13 @@ class TEP(DatasetBase):
     def new_task(self, cur_task, **kwargs):
         x_train, y_train = self.test_set[cur_task]
 
+        if cur_task != 0:
+            nonzero_positions = np.nonzero(y_train)[0]
+            x_train = x_train[nonzero_positions]
+            y_train = y_train[nonzero_positions]
+
         selected_indices = random.sample(range(len(y_train)), k=int(
-            self.params.n * random.uniform(0.25, 0.50)))
+            len(y_train) * random.uniform(0.5, 0.7)))
 
         x_train = x_train[selected_indices]
         y_train = y_train[selected_indices]

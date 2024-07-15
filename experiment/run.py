@@ -70,9 +70,10 @@ def multiple_run(params, store=False, save_path=None):
 
                 Test_time = time.time()
                 if params.agent == 'SRTFD':
-                    acc_array, rec_array = agent.evaluate(test_loaders, i, conf_threshold=0.95, uncertain_threshold=5)
+                    acc_array, rec_array = agent.evaluate(test_loaders, i, run, conf_threshold=0.95, uncertain_threshold=1)
+
                 else:
-                    acc_array, rec_array = agent.evaluate(test_loaders, i)
+                    acc_array, rec_array = agent.evaluate(test_loaders, i, run)
 
                 tmp_acc.append(acc_array)
                 tmp_rec.append(rec_array)

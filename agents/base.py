@@ -9,7 +9,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import copy
 from utils.loss import SupConLoss
 import pickle
-#from models.FocalLoss import FocalLoss
+# from models.FocalLoss import FocalLoss
 from utils.con_m import conf_matrix
 from utils.setup_elements import n_classes
 from sklearn.metrics import recall_score
@@ -103,7 +103,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
     def criterion(self, logits, labels):
         labels = labels.clone()
         ce = torch.nn.CrossEntropyLoss(reduction='mean')
-        #FC = FocalLoss(n_classes[self.params.data])
+        # FC = FocalLoss(n_classes[self.params.data])
         RL = FocalLoss()
         if self.params.trick['labels_trick']:
             unq_lbls = labels.unique().sort()[0]
@@ -123,18 +123,18 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             return SC(logits, labels)
         else:
             loss_ce = ce(logits, labels)
-            #loss_FC = FC(logits, labels)
+            # loss_FC = FC(logits, labels)
             loss_re = RL(logits, labels)
             return loss_re
 
     def forward(self, x):
         return self.model.forward(x)
 
-    def evaluate(self, test_loaders, curr_task, conf_threshold=0.95, uncertain_threshold=0.05):
+    def evaluate(self, test_loaders, curr_task, curr_run, conf_threshold=0.95, uncertain_threshold=0.05):
         self.model.eval()
         acc_array = np.zeros(len(test_loaders))
         recall1 = np.zeros(len(test_loaders))
-        #p = np.zeros(len(test_loaders))
+        # p = np.zeros(len(test_loaders))
         f1 = np.zeros(len(test_loaders))
         g_mean = np.zeros(len(test_loaders))
         support_micro = np.zeros(len(test_loaders))
@@ -178,6 +178,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
 
             self.pseudo_x = []
             self.pseudo_y = []
+            full_acc = torch.empty(0)
+            full_label = torch.empty(0)
             for task, test_loader in enumerate(test_loaders):
                 acc = AverageMeter()
                 accuracy11 = torch.empty(0)
@@ -217,17 +219,30 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         probs = F.softmax(logits, dim=1)
                         conf, pred_label = torch.max(probs, 1)
 
-                        if curr_task == task:
-                            entropy = - \
+                        if curr_task == task and self.params.agent == 'SRTFD':
+                            self.model.train()
+                            predictions = []
+                            for _ in range(5):
+                                with torch.no_grad():
+                                    logits = self.model.forward(batch_x)
+                                    probs = F.softmax(logits, dim=-1)
+                                    predictions.append(probs.unsqueeze(0))
+                            predictions = torch.cat(predictions, 0)
+                            mean_prediction = predictions.mean(0)
+                            conf, pred_label = torch.max(
+                                mean_prediction, dim=-1)
+                            uncertainty = - \
                                 torch.sum(
-                                    probs * torch.log2(probs + 1e-10), dim=1)
+                                    mean_prediction * torch.log(mean_prediction + 1e-10), dim=-1)
 
                             for i in range(len(batch_x)):
-                                if conf[i] > conf_threshold and conf[i] < 0.05: #and entropy[i] < uncertain_threshold:
+                                # print(conf[i], uncertainty[i])
+                                if conf[i] > conf_threshold and uncertainty[i] < uncertain_threshold:
+                                    # print('Here')
                                     self.pseudo_x.append(batch_x[i])
                                     self.pseudo_y.append(batch_y[i])
-                                    
-                            #print(len(self.pseudo_x))
+
+                            # print(len(self.pseudo_x))
                         accuracy11 = torch.cat((accuracy11, pred_label), dim=0)
                         # print(len(accuracy))
                         correct_cnt = (pred_label == batch_y).sum(
@@ -265,13 +280,24 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
                 acc_array[task] = acc.avg()
-                recall1[task] =recall_score(accuracy11, Label11, average='macro')
-                p, recall, f1, support_micro = metrics.precision_recall_fscore_support(accuracy11,Label11)
-                f1[task] = 2 * p.mean() * recall.mean() / (p.mean() + recall.mean())
-                g_mean[task] = np.sqrt(p.mean() * recall.mean())
-            print('recall {}, f1 {}, g_mean {}'.format(np.mean(recall1),np.mean(f1), np.mean(g_mean)))
-            #print(recall,f1)
-            #conf_matrix(accuracy11, Label11)
+                recall1[task] = recall_score(
+                    accuracy11, Label11, average='macro', zero_division=0)
+                p, recall, _, _ = metrics.precision_recall_fscore_support(
+                    accuracy11, Label11, zero_division=0)
+
+                p_mean = p.mean()
+                recall_mean = recall.mean()
+
+                f1[task] = 2 * p_mean * recall_mean / (p_mean + recall_mean)
+                g_mean[task] = np.sqrt(p_mean * recall_mean)
+
+                full_acc = torch.cat((full_acc, accuracy11), dim=0)
+                full_label = torch.cat((full_label, Label11), dim=0)
+
+            print('recall {}, f1 {}, g_mean {}'.format(
+                np.mean(recall1), np.mean(f1), np.mean(g_mean)))
+            conf_matrix(full_acc, full_label, f'{self.params.data}_{self.params.agent}_{self.params.cl_type}_run_{curr_run}_task_{curr_task}.png')
+            # print(recall,f1)
 
         print(acc_array)
 

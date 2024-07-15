@@ -37,6 +37,8 @@ class SRTFD(ContinualLearner):
         mask_l = idx < orig_size
         mask_pl = np.logical_and(idx >= len(
             y_train), idx < orig_size + len(pseudo_y))
+        
+        print(len(idx[mask_l]), len(idx))
 
         x_train = x_train[idx[mask_l]]
         y_train = y_train[idx[mask_l]]
@@ -48,6 +50,8 @@ class SRTFD(ContinualLearner):
             x_train, y_train, transform=transforms_match[self.data])
         ps_train_dataset = dataset_transform(
             pseudo_x, pseudo_y, transform=transforms_match[self.data])
+
+        print(len(train_dataset), len(ps_train_dataset))
 
         if alpha is not None:
             ps_train_loader = data.DataLoader(ps_train_dataset, batch_size=self.batch, shuffle=len(ps_train_dataset) != 0, num_workers=0,
