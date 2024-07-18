@@ -8,6 +8,7 @@ from utils.utils import maybe_cuda, AverageMeter
 from kornia.augmentation import RandomResizedCrop, RandomHorizontalFlip, ColorJitter, RandomGrayscale
 import torch.nn as nn
 
+
 class SupContrastReplay(ContinualLearner):
     def __init__(self, model, opt, params):
         super(SupContrastReplay, self).__init__(model, opt, params)
@@ -16,7 +17,8 @@ class SupContrastReplay(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
         self.transform = nn.Sequential(
-            RandomResizedCrop(size=(input_size_match[self.params.data][0], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
+            RandomResizedCrop(size=(
+                input_size_match[self.params.data][0], input_size_match[self.params.data][2]), scale=(0.2, 1.)),
             RandomHorizontalFlip(),
             ColorJitter(0.4, 0.4, 0.4, 0.1, p=0.8),
             RandomGrayscale(p=0.2)
@@ -27,7 +29,8 @@ class SupContrastReplay(ContinualLearner):
        # x_train, y_train = KL_div(x_train, y_train, 10, buffer)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
         # set up loader
-        train_dataset = dataset_transform(x_train, y_train, transform=transforms_match[self.data])
+        train_dataset = dataset_transform(
+            x_train, y_train, transform=transforms_match[self.data])
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,
                                        drop_last=True)
         # set up model
@@ -53,7 +56,8 @@ class SupContrastReplay(ContinualLearner):
                         combined_batch = torch.cat((mem_x, batch_x))
                         combined_labels = torch.cat((mem_y, batch_y))
                         combined_batch_aug = self.transform(combined_batch)
-                        features = torch.cat([self.model.forward(combined_batch).unsqueeze(1), self.model.forward(combined_batch_aug).unsqueeze(1)], dim=1)
+                        features = torch.cat([self.model.forward(combined_batch).unsqueeze(
+                            1), self.model.forward(combined_batch_aug).unsqueeze(1)], dim=1)
                         loss = self.criterion(features, combined_labels)
                         losses.update(loss, batch_y.size(0))
                         self.opt.zero_grad()
@@ -65,8 +69,8 @@ class SupContrastReplay(ContinualLearner):
                 self.buffer.update(batch_x, batch_y)
 
                 if i % 100 == 1 and self.verbose:
-                        print(
-                            '==>>> it: {}, avg. loss: {:.6f}, '
-                                .format(i, losses.avg(), acc_batch.avg())
-                        )
+                    print(
+                        '==>>> it: {}, avg. loss: {:.6f}, '
+                        .format(i, losses.avg(), acc_batch.avg())
+                    )
         self.after_train()
