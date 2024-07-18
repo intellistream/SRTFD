@@ -34,32 +34,34 @@ class TEP(DatasetBase):
 
         normal = np.concatenate([temp[i][:160]
                                 for i in range(1, len(temp))], axis=0)
-        self.data = [np.concatenate([temp[0], normal], axis=0)]
+        self.data = [deque(np.concatenate([temp[0], normal], axis=0))]
 
-        self.data += [deque(temp[i][160:]) for i in range(1, len(temp))]
+        self.f_samples = {0: (len(self.data[0]) - self.params.N) // 22}
+
+        for i in range(1, 22):
+            self.data.append(deque(temp[i][160:]))
+            self.f_samples[i] = len(self.data[i]) // (22-i)
 
     def setup(self):
         self.test_set = []
         if self.scenario == 'nc':
             for cur in range(len(self.data)):
-                test_label = np.zeros(self.params.n, dtype=int)
-                test_data = self.data[0][np.random.choice(
-                    self.data[0].shape[0], size=self.params.n, replace=False)]
+                test_label = np.zeros(self.f_samples[0], dtype=int)
+                test_data = np.array([self.data[0].popleft()
+                                     for _ in range(self.f_samples[0])])
 
                 if cur != 0:
-                    n = self.params.f // cur
                     for i in range(cur):
-                        start = self.params.n - self.params.f + n * i
-                        end = start + n if i + 1 != cur else self.params.n
-
-                        test_data[start:end] = [self.data[i+1].popleft()
-                                                for _ in range(end-start)]
-                        test_label[start:end] = i + 1
+                        segment = [self.data[i+1].popleft()
+                                   for _ in range(self.f_samples[i+1])]
+                        test_data = np.concatenate((test_data, segment))
+                        test_label = np.concatenate(
+                            (test_label, np.full(len(segment), i+1, dtype=int)))
                 self.test_set.append((test_data, test_label))
 
         if self.scenario == 'vc':
 
-            labels = [np.zeros(self.data[0].shape[0], dtype=int)]
+            labels = [np.zeros(len(self.data[0]), dtype=int)]
             for i in range(1, len(self.data)):
                 labels.append(np.full(len(self.data[i]), i, dtype=int))
 
@@ -88,8 +90,8 @@ class TEP(DatasetBase):
         return x_train, y_train, labels
 
     def init_kw(self):
-        x_train = self.data[0][np.random.choice(
-            self.data[0].shape[0], size=int(self.data[0].shape[0] * 0.01), replace=False)]
+        x_train = np.array([self.data[0].popleft()
+                           for _ in range(self.params.N)])
         y_train = np.zeros(len(x_train), dtype=int)
 
         return x_train, y_train

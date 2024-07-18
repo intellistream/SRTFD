@@ -53,7 +53,7 @@ if __name__ == "__main__":
     ######################## Agent#########################
     parser.add_argument('--agent', dest='agent', default='ER',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
-                                'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
+                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
                         help='Agent selection  (default: %(default)s)')
     parser.add_argument('--update', dest='update', default='random', choices=['random', 'GSS', 'ASER'],
                         help='Update method  (default: %(wqlt)s)')
@@ -102,12 +102,9 @@ if __name__ == "__main__":
     parser.add_argument('--online', dest='online', default=True,
                         type=boolean_string,
                         help='If False, offline training will be performed (default: %(default)s)')
-    parser.add_argument('--n', dest='n',
+    parser.add_argument('--N', dest='N',
                         type=int,
-                        help='Total number of samples', default=6055)
-    parser.add_argument('--f', dest='f',
-                        type=int,
-                        help='Total number of faulty samples', default=1932)
+                        help='Total number of samples for pretraining', default=1000)
 
     ######################## ER#########################
     parser.add_argument('--mem_size', dest='mem_size', default=1000,

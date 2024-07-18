@@ -50,13 +50,19 @@ class CARLS_M(DatasetBase):
 
         self.nc_data = []
         self.vc_data = []
+        self.f_samples = []
 
         for path in file_paths:
             d, l = self.load_file(path)
 
-            self.nc_data.append([d[l == label] if label == 0 else deque(
-                d[l == label]) for label in np.unique(l)])
+            self.nc_data.append([deque(d[l == label])
+                                for label in np.unique(l)])
 
+            self.f_samples.append(
+                {0: (len(self.nc_data[-1][0]) - self.params.N) // 5})
+            for i in range(1, len(self.nc_data[-1])):
+                self.f_samples[-1][i] = len(self.nc_data[-1]
+                                            [i]) // (len(self.nc_data[-1]) - i)
             self.vc_data.append((d, l))
 
     def setup(self, **kwargs):
@@ -66,18 +72,19 @@ class CARLS_M(DatasetBase):
         if self.scenario == 'nc':
             data = self.nc_data[self.cur_run]
             for cur in range(len(data)):
-                test_label = np.zeros(self.params.n, dtype=int)
-                test_data = data[0][np.random.choice(
-                    data[0].shape[0], size=self.params.n, replace=False)]
+                test_label = np.zeros(
+                    self.f_samples[self.cur_run][0], dtype=int)
+                test_data = np.array([data[0].popleft()
+                                     for _ in range(self.f_samples[self.cur_run][0])])
 
                 if cur != 0:
-                    n = self.params.f // cur
                     for i in range(cur):
-                        start = self.params.n - self.params.f + n * i
-                        end = start + n if i + 1 != cur else self.params.n
-                        test_data[start:end] = [data[i+1].popleft()
-                                                for _ in range(end-start)]
-                        test_label[start:end] = i + 1
+                        segment = [data[i+1].popleft()
+                                   for _ in range(self.f_samples[self.cur_run][i+1])]
+                        test_data = np.concatenate((test_data, segment))
+                        test_label = np.concatenate(
+                            (test_label, np.full(len(segment), i+1, dtype=int)))
+
                 self.test_set.append((test_data, test_label))
         elif self.scenario == 'vc':
             for i in range(self.task_nums):
@@ -113,15 +120,16 @@ class CARLS_M(DatasetBase):
     def init_kw(self):
         if self.scenario == 'nc':
             data = self.nc_data[self.cur_run]
-            x_train = data[0][np.random.choice(
-                data[0].shape[0], size=int(data[0].shape[0] * 0.01), replace=False)]
+            x_train = np.array([data[0].popleft()
+                                for _ in range(self.params.N)])
             y_train = np.zeros(len(x_train), dtype=int)
         elif self.scenario == 'vc':
             x, y = self.vc_data[self.cur_run]
-            normal_idx = y == 0
-            x_train = x[normal_idx][np.random.choice(
-                x[normal_idx].shape[0], size=int(x[normal_idx].shape[0] * 0.01), replace=False)]
-            y_train = np.zeros(len(x_train), dtype=int)
+            x_train = x[:self.params.N]
+            y_train = y[:self.params.N]
+
+            self.vc_data[self.cur_run] = (x[self.params.N:], y[self.params.N:])
+
         return x_train, y_train
 
     def new_run(self, **kwargs):
