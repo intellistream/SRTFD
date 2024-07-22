@@ -31,7 +31,7 @@ class SRTFD(ContinualLearner):
         pseudo_y = np.array(pseudo_y)
 
         coreset = CoresetGreedy(x_train, pseudo_x, y_train, pseudo_y)
-        idx = coreset.sample(coreset_ratio)
+        idx = coreset.sample(coreset_ratio, self.buffer)
 
         orig_size = len(y_train)
 
