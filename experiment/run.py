@@ -20,6 +20,12 @@ import pandas as pd
 import os
 import pickle
 from utils.Cluster import Cluster,KL_div
+from models.MPOSRVFL import MPOS_RVFL
+# 计算项目根目录的路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# 将项目根目录添加到 sys.path
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 
 def multiple_run(params, store=False, save_path=None):
@@ -47,9 +53,21 @@ def multiple_run(params, store=False, save_path=None):
         data_continuum.new_run()
         model = setup_architecture(params)
         model = maybe_cuda(model, params.cuda)
+
         opt = setup_opt(params.optimizer, model,
                         params.learning_rate, params.weight_decay)
+
+        if params.agent == 'MPOS_RVFL':
+            model = MPOS_RVFL(
+                Ne=10,
+                N2=20,
+                enhence_function='sigmoid',
+                reg=1,
+                gamma=0.0001,
+                n_anchor=50,
+                sigma=1)
         agent = agents[params.agent](model, opt, params)
+
         # prepare val data loader
         test_loaders = setup_test_loader(data_continuum.test_data(), params)
         TrainTime = 0
@@ -70,7 +88,8 @@ def multiple_run(params, store=False, save_path=None):
 
                 Test_time = time.time()
                 if params.agent == 'SRTFD':
-                    acc_array, rec_array = agent.evaluate(test_loaders, i, run, conf_threshold=0.95, uncertain_threshold=1)
+                    acc_array, rec_array = agent.evaluate(
+                        test_loaders, i, run, conf_threshold=0.95, uncertain_threshold=1)
 
                 else:
                     acc_array, rec_array = agent.evaluate(test_loaders, i, run)
@@ -78,12 +97,13 @@ def multiple_run(params, store=False, save_path=None):
                 tmp_acc.append(acc_array)
                 tmp_rec.append(rec_array)
                 Test_time_end = time.time()
-                
-                TestTime  = TestTime + (Test_time_end - Test_time)
-                
-                print('train size: {}, {}'.format(x_train.shape, y_train.shape))
+
+                TestTime = TestTime + (Test_time_end - Test_time)
+
+                print('train size: {}, {}'.format(
+                    x_train.shape, y_train.shape))
                 print("current label: {}".format(labels))
-                
+
                 train_time_start = time.time()
                 if params.agent == 'SRTFD':
                     agent.train_learner(
@@ -93,12 +113,12 @@ def multiple_run(params, store=False, save_path=None):
                         x_train, y_train)
                 train_time_end = time.time()
                 TrainTime = TrainTime + (train_time_end - train_time_start)
-                     
+
             run_end = time.time()
-            
+
             print(
-                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]),np.mean(tmp_rec[-1]),
-                                                                                            TrainTime, TestTime, run_end-run_start))
+                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]), np.mean(tmp_rec[-1]),
+                                                                                                                                                   TrainTime, TestTime, run_end-run_start))
             accuracy_list.append(np.array(tmp_acc))
         else:
             x_train_offline = []

@@ -30,3 +30,7 @@ python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent AGEM --num
 # CNDPM
 python3 general_main.py --data HRS --num_tasks 6 --cl_type nc --agent CNDPM --num_runs 1 --N 1000 --stm_capacity 1000 --classifier_chill 0.01 --log_alpha -300
 python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent CNDPM --num_runs 1 --ns_factor 0.4 --stm_capacity 1000 --classifier_chill 0.01 --log_alpha -300
+
+# MPOS_RVFL
+python3 general_main.py --data HRS --num_tasks 6 --cl_type nc --agent MPOS_RVFL --num_runs 1 --N 1000 --n_anchor 50
+python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent MPOS_RVFL --num_runs 1 --ns_factor 0.4 --N 1000 --n_anchor 50

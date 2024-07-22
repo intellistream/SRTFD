@@ -131,13 +131,15 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         return self.model.forward(x)
 
     def evaluate(self, test_loaders, curr_task, curr_run, conf_threshold=0.95, uncertain_threshold=0.05):
-        self.model.eval()
+        if self.params.agent != 'MPOS_RVFL':
+            self.model.eval()
         acc_array = np.zeros(len(test_loaders))
         recall1 = np.zeros(len(test_loaders))
         # p = np.zeros(len(test_loaders))
         f1 = np.zeros(len(test_loaders))
         g_mean = np.zeros(len(test_loaders))
         support_micro = np.zeros(len(test_loaders))
+
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
             exemplar_means = {}
             cls_exemplar = {cls: [] for cls in self.old_labels}
@@ -215,9 +217,13 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         correct_cnt = (np.array(self.old_labels)[
                             pred_label.tolist()] == batch_y.cpu().numpy()).sum().item() / batch_y.size(0)
                     else:
-                        logits = self.model.forward(batch_x)
-                        probs = F.softmax(logits, dim=1)
-                        conf, pred_label = torch.max(probs, 1)
+                        if self.params.agent == 'MPOS_RVFL':
+                            pred_label = torch.from_numpy(
+                                self.model.predict(batch_x.cpu().numpy()))
+                        else:
+                            logits = self.model.forward(batch_x)
+                            probs = F.softmax(logits, dim=1)
+                            conf, pred_label = torch.max(probs, 1)
 
                         if curr_task == task and self.params.agent == 'SRTFD':
                             self.model.train()
@@ -310,7 +316,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
 
             print('recall {}, f1 {}, g_mean {}'.format(
                 np.mean(recall1), np.mean(f1), np.mean(g_mean)))
-            conf_matrix(full_acc, full_label, f'{self.params.data}_{self.params.agent}_{self.params.cl_type}_run_{curr_run}_task_{curr_task}.png')
+            conf_matrix(full_acc, full_label, f'{self.params.data}_{self.params.agent}_{
+                        self.params.cl_type}_run_{curr_run}_task_{curr_task}.png')
             # print(recall,f1)
 
         print(acc_array)
