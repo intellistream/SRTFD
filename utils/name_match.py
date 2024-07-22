@@ -16,6 +16,7 @@ from agents.cndpm import Cndpm
 from agents.lwf import Lwf
 from agents.icarl import Icarl
 from agents.scr import SupContrastReplay
+from agents.mpos_rvfl import MPOS_RFVL
 from utils.buffer.random_retrieve import Random_retrieve
 from utils.buffer.reservoir_update import Reservoir_update
 from utils.buffer.mir_retrieve import MIR_retrieve
@@ -48,6 +49,7 @@ agents = {
     'ICARL': Icarl,
     'GDUMB': Gdumb,
     'SCR': SupContrastReplay,
+    'MPOS_RVFL': MPOS_RFVL,
 }
 
 retrieve_methods = {

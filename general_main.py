@@ -53,7 +53,7 @@ if __name__ == "__main__":
     ######################## Agent#########################
     parser.add_argument('--agent', dest='agent', default='ER',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
-                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
+                                 'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD', 'MPOS_RVFL'],
                         help='Agent selection  (default: %(default)s)')
     parser.add_argument('--update', dest='update', default='random', choices=['random', 'GSS', 'ASER'],
                         help='Update method  (default: %(wqlt)s)')
@@ -198,6 +198,10 @@ if __name__ == "__main__":
                         help='warmup of buffer before retrieve')
     parser.add_argument('--head', type=str, default='mlp',
                         help='projection head')
+
+    #################### MPOS_RVFL######################
+    parser.add_argument('--n_anchor', type=int, default=50)
+
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
     main(args)
