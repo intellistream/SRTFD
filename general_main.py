@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-path', dest='save_path', default=None)
 
     ######################## Agent#########################
-    parser.add_argument('--agent', dest='agent', default='ER',
+    parser.add_argument('--agent', dest='agent', default='M',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
                                  'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD'],
                         help='Agent selection  (default: %(default)s)')
@@ -66,16 +66,16 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', dest='learning_rate', default=0.0001,
                         type=float,
                         help='Learning_rate (default: %(default)s)')
-    parser.add_argument('--epoch', dest='epoch', default=5,
+    parser.add_argument('--epoch', dest='epoch', default=200,
                         type=int,
                         help='The number of epochs used for one task. (default: %(default)s)')
-    parser.add_argument('--batch', dest='batch', default=10,
+    parser.add_argument('--batch', dest='batch', default=100,
                         type=int,
                         help='Batch size (default: %(default)s)')
-    parser.add_argument('--test_batch', dest='test_batch', default=10,
+    parser.add_argument('--test_batch', dest='test_batch', default=100,
                         type=int,
                         help='Test batch size (default: %(default)s)')
-    parser.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.001,
+    parser.add_argument('--weight_decay', dest='weight_decay', type=float, default=0.0001,
                         help='weight_decay')
 
     ######################## Data#########################

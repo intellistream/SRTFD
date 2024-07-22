@@ -11,7 +11,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 
 
 def conf_matrix(y_pred, y_true, name, normalize=True, cmap=plt.cm.Blues):
-    cm = confusion_matrix(y_true, y_pred)
+    cm = confusion_matrix(y_true.cpu(), y_pred.cpu())
     cm_percentage = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] * 100
 
     # Plot confusion matrix
@@ -20,7 +20,7 @@ def conf_matrix(y_pred, y_true, name, normalize=True, cmap=plt.cm.Blues):
     ax.figure.colorbar(im, ax=ax)
 
     # We want to show all ticks and label them with the respective list entries
-    classes = np.unique(y_true)
+    classes = np.unique(y_true.cpu())
     ax.set(xticks=np.arange(cm.shape[1]),
            yticks=np.arange(cm.shape[0]),
            xticklabels=classes, yticklabels=classes,

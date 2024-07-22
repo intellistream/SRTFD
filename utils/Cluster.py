@@ -103,7 +103,7 @@ def find_indexes_less_equal(arr, threshold):
     return indexes
 
 def KL_div(x_train, y_train, buffer, n_clusters):
-    class_Buffer = np.unique(buffer.buffer_label) 
+    class_Buffer = np.unique(buffer.buffer_label.cpu()) 
     x_train_clusterdata = x_train.reshape(x_train.shape[0],-1)
     mbk = MiniBatchKMeans(n_clusters=n_clusters, batch_size=256, random_state=0)
     y_pred = mbk.fit_predict(x_train_clusterdata)
@@ -118,7 +118,7 @@ def KL_div(x_train, y_train, buffer, n_clusters):
     else:
         nn = 1
         for j in range(len(class_Buffer)):
-            B_data = buffer.buffer_img[np.where(buffer.buffer_label == j)]
+            B_data = buffer.buffer_img[np.where(buffer.buffer_label.cpu() == j)]
             B_Data_mean = np.mean(B_data.cpu().numpy(), axis = 0)
             B_Data_var = np.var(Bdata, axis = 0)
             cov1 = np.cov(Bdata, rowvar=False, bias=True)

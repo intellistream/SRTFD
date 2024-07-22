@@ -19,11 +19,12 @@ class SRTFD(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha=0.8, coreset_ratio=0.8, init_train=False):
+    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha = 0.7, coreset_ratio = 0.6, init_train=False):
         self.before_train(x_train, y_train)
         Beta = 0.5
         print('before size: {}, {}'.format(x_train.shape, y_train.shape))
         x_train, y_train = KL_div(x_train, y_train, self.buffer,6)
+        #pseudo_x, pseudo_y = KL_div(x_train, y_train, self.buffer,6)
         print('size: {}, {}'.format(x_train.shape, y_train.shape))
 
         pseudo_x = np.array(pseudo_x)

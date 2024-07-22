@@ -237,18 +237,28 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
 
                             for i in range(len(batch_x)):
                                 # print(conf[i], uncertainty[i])
-                                if conf[i] > conf_threshold and uncertainty[i] < uncertain_threshold:
+                                if conf[i] > 0.95 and uncertainty[i] < 2:
                                     # print('Here')
-                                    self.pseudo_x.append(batch_x[i])
-                                    self.pseudo_y.append(batch_y[i])
+                                    self.pseudo_x.append(batch_x[i].cpu())
+                                    self.pseudo_y.append(batch_y[i].cpu())
+                                if conf[i] < 0.45 and uncertainty[i] < 2:
+                                    # print('Here')
+                                    self.pseudo_x.append(batch_x[i].cpu())
+                                    self.pseudo_y.append(batch_y[i].cpu())
 
                             # print(len(self.pseudo_x))
+                        accuracy11 = maybe_cuda(accuracy11, self.cuda)
+                        pred_label = maybe_cuda(pred_label, self.cuda)
                         accuracy11 = torch.cat((accuracy11, pred_label), dim=0)
                         # print(len(accuracy))
                         correct_cnt = (pred_label == batch_y).sum(
                         ).item()/batch_y.size(0)
 
+                        Label11 = maybe_cuda(Label11, self.cuda)
+                        batch_y = maybe_cuda(batch_y, self.cuda)
                         Label11 = torch.cat((Label11, batch_y), dim=0)
+                        
+                        
 
                     if self.params.error_analysis:
                         correct_lb += [task] * len(batch_y)
@@ -281,9 +291,9 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                     acc.update(correct_cnt, batch_y.size(0))
                 acc_array[task] = acc.avg()
                 recall1[task] = recall_score(
-                    accuracy11, Label11, average='macro', zero_division=0)
+                    accuracy11.cpu(), Label11.cpu(), average='macro', zero_division=0)
                 p, recall, _, _ = metrics.precision_recall_fscore_support(
-                    accuracy11, Label11, zero_division=0)
+                    accuracy11.cpu(), Label11.cpu(), zero_division=0)
 
                 p_mean = p.mean()
                 recall_mean = recall.mean()
@@ -291,6 +301,10 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                 f1[task] = 2 * p_mean * recall_mean / (p_mean + recall_mean)
                 g_mean[task] = np.sqrt(p_mean * recall_mean)
 
+                full_acc = maybe_cuda(full_acc, self.cuda)
+                accuracy11 = maybe_cuda(accuracy11, self.cuda)
+                full_label = maybe_cuda(full_label, self.cuda)
+                Label11 = maybe_cuda(Label11, self.cuda)
                 full_acc = torch.cat((full_acc, accuracy11), dim=0)
                 full_label = torch.cat((full_label, Label11), dim=0)
 
