@@ -134,8 +134,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         if self.params.agent != 'MPOS_RVFL':
             self.model.eval()
         acc_array = np.zeros(len(test_loaders))
-        recall1 = np.zeros(len(test_loaders))
-        # p = np.zeros(len(test_loaders))
+        recall = np.zeros(len(test_loaders))
+        p = np.zeros(len(test_loaders))
         f1 = np.zeros(len(test_loaders))
         g_mean = np.zeros(len(test_loaders))
         support_micro = np.zeros(len(test_loaders))
@@ -296,16 +296,18 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
                 acc_array[task] = acc.avg()
-                recall1[task] = recall_score(
-                    accuracy11.cpu(), Label11.cpu(), average='macro', zero_division=0)
-                p, recall, _, _ = metrics.precision_recall_fscore_support(
-                    accuracy11.cpu(), Label11.cpu(), zero_division=0)
+                # recall1[task] = recall_score(
+                    # accuracy11.cpu(), Label11.cpu(), average='macro', zero_division=0)
+                p[task], recall[task], f1[task], _ = metrics.precision_recall_fscore_support(
+                    accuracy11.cpu(), Label11.cpu(), zero_division=0, average='macro')
 
-                p_mean = p.mean()
-                recall_mean = recall.mean()
+                # p_mean = p.mean()
+                # recall_mean = recall.mean()
 
-                f1[task] = 2 * p_mean * recall_mean / (p_mean + recall_mean)
-                g_mean[task] = np.sqrt(p_mean * recall_mean)
+                # f1[task] = 2 * p_mean * recall_mean / (p_mean + recall_mean)
+
+                # g_mean[task] = np.sqrt(p_mean * recall_mean)
+                g_mean[task] = np.sqrt(p[task] * recall[task])
 
                 full_acc = maybe_cuda(full_acc, self.cuda)
                 accuracy11 = maybe_cuda(accuracy11, self.cuda)
@@ -314,8 +316,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                 full_acc = torch.cat((full_acc, accuracy11), dim=0)
                 full_label = torch.cat((full_label, Label11), dim=0)
 
-            print('recall {}, f1 {}, g_mean {}'.format(
-                np.mean(recall1), np.mean(f1), np.mean(g_mean)))
+            # print('recall {}, f1 {}, g_mean {}'.format(
+            #     np.mean(recall), np.mean(f1), np.mean(g_mean)))
             conf_matrix(full_acc, full_label, f'{self.params.data}_{self.params.agent}_{
                         self.params.cl_type}_run_{curr_run}_task_{curr_task}.png')
             # print(recall,f1)
@@ -346,4 +348,4 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             print(self.bias_norm_new)
             with open('confusion', 'wb') as fp:
                 pickle.dump([correct_lb, predict_lb], fp)
-        return acc_array, recall
+        return acc_array, recall, p, f1, g_mean

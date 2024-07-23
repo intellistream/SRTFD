@@ -45,10 +45,17 @@ def multiple_run(params, store=False, save_path=None):
             save_path = params.model_name + '_' + params.data_name + '.pkl'
 
     accuracy_list = []
+    recall_list = []
+    precision_list = []
+    f1_list = []
+    gmean_list = []
 
     for run in range(params.num_runs):
         tmp_acc = []
         tmp_rec = []
+        tmp_pre = []
+        tmp_f1 = []
+        tmp_gmean = []
         run_start = time.time()
         data_continuum.new_run()
         model = setup_architecture(params)
@@ -88,14 +95,17 @@ def multiple_run(params, store=False, save_path=None):
 
                 Test_time = time.time()
                 if params.agent == 'SRTFD':
-                    acc_array, rec_array = agent.evaluate(
+                    acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(
                         test_loaders, i, run, conf_threshold=0.95, uncertain_threshold=1)
 
                 else:
-                    acc_array, rec_array = agent.evaluate(test_loaders, i, run)
+                    acc_array, rec_array, pre_array,  f1_array, gmean_array = agent.evaluate(test_loaders, i, run)
 
                 tmp_acc.append(acc_array)
                 tmp_rec.append(rec_array)
+                tmp_pre.append(pre_array)
+                tmp_f1.append(f1_array)
+                tmp_gmean.append(gmean_array)
                 Test_time_end = time.time()
 
                 TestTime = TestTime + (Test_time_end - Test_time)
@@ -114,12 +124,33 @@ def multiple_run(params, store=False, save_path=None):
                 train_time_end = time.time()
                 TrainTime = TrainTime + (train_time_end - train_time_start)
 
+            
+            Test_time = time.time()
+            if params.agent == 'SRTFD':
+                acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(
+                    test_loaders, i+1, run, conf_threshold=0.95, uncertain_threshold=1)
+
+            else:
+                acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(test_loaders, i+1, run)
+
+            tmp_acc.append(acc_array)
+            tmp_rec.append(rec_array)
+            tmp_pre.append(pre_array)
+            tmp_f1.append(f1_array)
+            tmp_gmean.append(gmean_array)
+            Test_time_end = time.time()
+
+            TestTime = TestTime + (Test_time_end - Test_time)
+
             run_end = time.time()
 
             print(
-                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]), np.mean(tmp_rec[-1]),
-                                                                                                                                                   TrainTime, TestTime, run_end-run_start))
+                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-----------avg_end_pre {}-------avg_end_f1 {}-----------avg_end_gmean {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]), np.mean(tmp_rec[-1]), np.mean(tmp_pre[-1]), np.mean(tmp_f1[-1]), np.mean(tmp_gmean[-1]), TrainTime, TestTime, run_end-run_start))
             accuracy_list.append(np.array(tmp_acc))
+            recall_list.append(np.array(tmp_rec))
+            precision_list.append(np.array(tmp_pre))
+            f1_list.append(np.array(tmp_f1))
+            gmean_list.append(np.array(tmp_gmean))
         else:
             x_train_offline = []
             y_train_offline = []
@@ -137,20 +168,29 @@ def multiple_run(params, store=False, save_path=None):
             accuracy_list.append(acc_array)
 
     accuracy_array = np.array(accuracy_list)
+    recall_array = np.array(recall_list)
+    precision_array = np.array(precision_list)
+    f1_array = np.array(f1_list)
+    gmean_array = np.array(gmean_list)
+
     end = time.time()
     if store:
         result = {'time': end - start}
         result['acc_array'] = accuracy_array
+        result['rec_array'] = recall_array
+        result['pre_array'] = precision_array
+        result['f1_array'] = f1_array
+        result['gmean_array'] = gmean_array
         save_file = open(table_path + '/' + save_path, "wb")
         pickle.dump(result, save_file)
         save_file.close()
     if params.online:
-        avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt = compute_performance(
-            accuracy_array)
+        avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt, avg_end_rec, avg_rec, avg_end_pre, avg_pre, avg_end_f1, avg_f1, avg_end_gmean, avg_gmean = compute_performance(
+            accuracy_array, recall_array, precision_array, f1_array, gmean_array)
         print(
             '----------- Total {} run: {}s -----------'.format(params.num_runs, end - start))
-        print('----------- Avg_End_Acc {} Avg_End_Fgt {} Avg_Acc {} Avg_Bwtp {} Avg_Fwt {}-----------'
-              .format(avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt))
+        print('----------- Avg_End_Acc {} Avg_End_Fgt {} Avg_Acc {} Avg_Bwtp {} Avg_Fwt {}  Avg_End_Rec {} Avg_Rec {}  Avg_End_Precision {} Avg_Precision {}  Avg_End_F1 {} Avg_F1 {}  Avg_End_Gmean {} Avg_Gmean {}-----------'
+              .format(avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt, avg_end_rec, avg_rec, avg_end_pre, avg_pre, avg_end_f1, avg_f1, avg_end_gmean, avg_gmean))
     else:
         print(
             '----------- Total {} run: {}s -----------'.format(params.num_runs, end - start))
