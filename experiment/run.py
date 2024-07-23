@@ -107,7 +107,7 @@ def multiple_run(params, store=False, save_path=None):
                 train_time_start = time.time()
                 if params.agent == 'SRTFD':
                     agent.train_learner(
-                        x_train, y_train, pseudo_x=agent.pseudo_x, pseudo_y=agent.pseudo_y, alpha=0.7, coreset_ratio=0.6)
+                        x_train, y_train, pseudo_x=agent.pseudo_x, pseudo_y=agent.pseudo_y, alpha=0.7, coreset_ratio=0.8)
                 else:
                     agent.train_learner(
                         x_train, y_train)
