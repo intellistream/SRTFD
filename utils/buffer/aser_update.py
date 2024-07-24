@@ -108,5 +108,6 @@ class ASER_update(object):
         x_upt = cur_x[ind_cur]
         ClassBalancedRandomSampling.update_cache(buffer.buffer_label, self.out_dim,
                                                  new_y=y_upt, ind=ind_buffer, device=self.device)
-        buffer.buffer_img[ind_buffer] = x_upt
+        
+        buffer.buffer_img[ind_buffer] = x_upt.float()
         buffer.buffer_label[ind_buffer] = y_upt
