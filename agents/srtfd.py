@@ -19,7 +19,7 @@ class SRTFD(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha = 0.7, coreset_ratio = 0.8, init_train=False):
+    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha = 1.0, coreset_ratio = 0.4, init_train=False):
         self.before_train(x_train, y_train)
         Beta = 0.5
         print('before size: {}, {}'.format(x_train.shape, y_train.shape))

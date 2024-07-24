@@ -51,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-path', dest='save_path', default=None)
 
     ######################## Agent#########################
-    parser.add_argument('--agent', dest='agent', default='M',
+    parser.add_argument('--agent', dest='agent', default='AGEM',
                         choices=['ER', 'EWC', 'AGEM', 'CNDPM',
                                  'LWF', 'ICARL', 'GDUMB', 'ASER', 'SCR', 'SRTFD', 'MPOS_RVFL'],
                         help='Agent selection  (default: %(default)s)')
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                         help='weight_decay')
 
     ######################## Data#########################
-    parser.add_argument('--num_tasks', dest='num_tasks', default=6,
+    parser.add_argument('--num_tasks', dest='num_tasks', default=10,
                         type=int,
                         help='Number of tasks (default: %(default)s), OpenLORIS num_tasks is predefined')
     parser.add_argument('--fix_order', dest='fix_order', default=False,
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--plot_sample', dest='plot_sample', default=False,
                         type=boolean_string,
                         help='In NI scenario, should sample images be plotted (default: %(default)s)')
-    parser.add_argument('--data', dest='data', default="HRS",
+    parser.add_argument('--data', dest='data', default="CARLS_S",
                         help='Path to the dataset. (default: %(default)s)')
     parser.add_argument('--cl_type', dest='cl_type', default="nc", choices=['nc', 'vc'],
                         help='Continual learning type: new class "nc" or new instance "ni". (default: %(default)s)')

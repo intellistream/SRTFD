@@ -243,11 +243,11 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
 
                             for i in range(len(batch_x)):
                                 # print(conf[i], uncertainty[i])
-                                if conf[i] > 0.95 and uncertainty[i] < 2:
+                                if conf[i] > 0.95 and uncertainty[i] < 5:
                                     # print('Here')
                                     self.pseudo_x.append(batch_x[i].cpu())
                                     self.pseudo_y.append(batch_y[i].cpu())
-                                if conf[i] < 0.45 and uncertainty[i] < 2:
+                                if conf[i] < 0.50 and uncertainty[i] < 5:
                                     # print('Here')
                                     self.pseudo_x.append(batch_x[i].cpu())
                                     self.pseudo_y.append(batch_y[i].cpu())
