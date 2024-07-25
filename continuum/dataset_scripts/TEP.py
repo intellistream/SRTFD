@@ -7,6 +7,7 @@ from continuum.dataset_scripts.dataset_base import DatasetBase
 from continuum.non_stationary import construct_ns_multiple_wrapper, test_ns
 from glob import iglob
 from collections import deque
+from sklearn.utils import resample
 
 
 class TEP(DatasetBase):
@@ -71,19 +72,61 @@ class TEP(DatasetBase):
             self.test_set = construct_ns_multiple_wrapper(
                 data, labels, self.task_nums, 52, self.params.ns_type, self.params.ns_factor, plot=self.params.plot_sample)
 
+    def s_sample(self, x_train, y_train):
+        n_idx = np.where(y_train == 0)[0]
+        f_idx = np.where(y_train != 0)[0]
+
+        n_cls = len(n_idx)
+        f_cls = len(f_idx)
+
+        if self.params.n_r == 0:
+            target_f_size = f_cls
+            sampled_f_idx = resample(
+                f_idx, replace=False, n_samples=target_f_size, random_state=42)
+            sampled_indices = sampled_f_idx
+        elif self.params.f_r == 0:
+            target_n_size = n_cls
+            sampled_n_idx = resample(
+                n_idx, replace=False, n_samples=target_n_size, random_state=42)
+            sampled_indices = sampled_n_idx
+        else:
+            target_n_size = int(f_cls * self.params.n_r /
+                                self.params.f_r) if self.params.f_r > 0 else n_cls
+            target_f_size = int(n_cls * self.params.f_r /
+                                self.params.n_r) if self.params.n_r > 0 else f_cls
+
+            target_n_size = min(n_cls, target_n_size)
+            target_f_size = min(f_cls, target_f_size)
+
+            sampled_n_idx = resample(
+                n_idx, replace=False, n_samples=target_n_size, random_state=42)
+            sampled_f_idx = resample(
+                f_idx, replace=False, n_samples=target_f_size, random_state=42)
+
+            sampled_indices = np.concatenate([sampled_n_idx, sampled_f_idx])
+
+        np.random.shuffle(sampled_indices)
+
+        return x_train[sampled_indices], y_train[sampled_indices]
+
     def new_task(self, cur_task, **kwargs):
         x_train, y_train = self.test_set[cur_task]
 
-        if cur_task != 0:
-            nonzero_positions = np.nonzero(y_train)[0]
-            x_train = x_train[nonzero_positions]
-            y_train = y_train[nonzero_positions]
+        if self.scenario == 'nc':
+            if cur_task != 0:
+                nonzero_positions = np.nonzero(y_train)[0]
+                x_train = x_train[nonzero_positions]
+                y_train = y_train[nonzero_positions]
+                # print(y_train)
 
         selected_indices = random.sample(range(len(y_train)), k=int(
             len(y_train) * random.uniform(0.5, 0.7)))
 
         x_train = x_train[selected_indices]
         y_train = y_train[selected_indices]
+
+        if self.scenario == 'vc':
+            x_train, y_train = self.s_sample(x_train, y_train)
 
         labels = np.unique(y_train)
 

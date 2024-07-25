@@ -105,6 +105,10 @@ if __name__ == "__main__":
     parser.add_argument('--N', dest='N',
                         type=int,
                         help='Total number of samples for pretraining', default=1000)
+    parser.add_argument('--n_r', dest='n_r',
+                        type=int, default=1)
+    parser.add_argument('--f_r', dest='f_r',
+                        type=int, default=1)
 
     ######################## ER#########################
     parser.add_argument('--mem_size', dest='mem_size', default=1000,
