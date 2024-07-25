@@ -62,7 +62,7 @@ class SRTFD(ContinualLearner):
                 [train_dataset, ps_train_dataset])
 
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,
-                                       drop_last=True)
+                                       drop_last=False)
 
         # set up model
         self.model = self.model.train()
