@@ -41,7 +41,7 @@ class CoresetGreedy:
             else:
                 ind = np.argmax(self.min_distances)
 
-                while ind in self.already_selected:
+                while ind in self.already_selected and np.all(self.min_distances != 0):
                     self.min_distances[ind] = 0
                     ind = np.argmax(self.min_distances)
 

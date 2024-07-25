@@ -79,12 +79,12 @@ class TEP(DatasetBase):
         n_cls = len(n_idx)
         f_cls = len(f_idx)
 
-        if self.params.n_r == 0:
+        if self.params.n_r == 0 or n_cls == 0:
             target_f_size = f_cls
             sampled_f_idx = resample(
                 f_idx, replace=False, n_samples=target_f_size, random_state=42)
             sampled_indices = sampled_f_idx
-        elif self.params.f_r == 0:
+        elif self.params.f_r == 0 or f_cls == 0:
             target_n_size = n_cls
             sampled_n_idx = resample(
                 n_idx, replace=False, n_samples=target_n_size, random_state=42)
