@@ -5,7 +5,7 @@ from torch.utils import data
 from utils.buffer.buffer import Buffer
 from utils.utils import maybe_cuda, AverageMeter
 import torch
-
+from utils.coresetc import CoresetGreedyC
 
 class AGEM(ContinualLearner):
     def __init__(self, model, opt, params):
@@ -17,7 +17,18 @@ class AGEM(ContinualLearner):
 
     def train_learner(self, x_train, y_train, pseduo_x=[], pseudo_y=[], init_train=False):
         self.before_train(x_train, y_train)
+        coreset = CoresetGreedyC(x_train, y_train)
+        idx = coreset.sample(0.8)
+        #print(idx)
 
+        orig_size = len(y_train)
+
+        mask_l = idx < orig_size
+        
+        print(len(idx[mask_l]), len(idx))
+
+        x_train = x_train[idx[mask_l]]
+        y_train = y_train[idx[mask_l]]
         # set up loader
         train_dataset = dataset_transform(x_train, y_train, transform=transforms_match[self.data])
         train_loader = data.DataLoader(train_dataset, batch_size=self.batch, shuffle=True, num_workers=0,

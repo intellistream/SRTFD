@@ -1,0 +1,52 @@
+import numpy as np
+from sklearn.metrics import pairwise_distances
+
+
+class CoresetGreedyC:
+    def __init__(self, data_pts, labels):
+
+        self.data_pts = data_pts
+        self.labels = labels
+        self.data_pts, indices = np.unique(
+            self.data_pts, axis=0, return_index=True)
+        self.labels = self.labels[indices]
+
+        self.dset_size = len(self.data_pts)
+
+        self.min_distances = np.inf * np.ones(self.dset_size, dtype=np.float32)
+        self.already_selected = []
+
+        self.data_pts = self.data_pts.reshape(-1, self.data_pts.shape[1])
+
+    def update_dist(self, centers):
+        dist = pairwise_distances(
+            self.data_pts[centers], self.data_pts, metric='euclidean')
+        self.min_distances = np.minimum(
+            self.min_distances, np.min(dist, axis=0))
+
+    def sample(self, sample_ratio):
+        sample_size = int(self.dset_size * sample_ratio)
+        print("sample_size:{}".format(sample_size))
+
+        new_batch = {label: [] for label in np.unique(self.labels)}
+
+        for _ in range(sample_size):
+            if not self.already_selected:
+                ind = np.random.choice(self.dset_size)
+            else:
+                ind = np.argmax(self.min_distances)
+
+                while ind in self.already_selected:
+                    self.min_distances[ind] = 0
+                    ind = np.argmax(self.min_distances)
+
+            self.already_selected.append(ind)
+            self.update_dist([ind])
+
+            new_batch[self.labels[ind]].append(ind)
+            #new_balanced_batch=np.array(list(new_batch.values()))
+            #print(new_batch)
+            new_balanced_batch = np.array([item for sublist in new_batch.values()
+                                    for item in sublist[:len(sublist)]])
+
+        return new_balanced_batch

@@ -99,7 +99,7 @@ class ASER_update(object):
         # Retrieve original indices from candidate args
         ind_cur = sv_arg_large[nonzero_indices(sv_arg_large >= n_cand_buf)] - n_cand_buf
         arg_buffer = sv_arg_small[nonzero_indices(sv_arg_small < n_cand_buf)]
-        ind_buffer = cand_ind[arg_buffer]
+        ind_buffer = cand_ind[arg_buffer.cpu()]
 
         buffer.n_seen_so_far += n_cur
 
