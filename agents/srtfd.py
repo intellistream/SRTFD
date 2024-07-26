@@ -19,7 +19,7 @@ class SRTFD(ContinualLearner):
         self.eps_mem_batch = params.eps_mem_batch
         self.mem_iters = params.mem_iters
 
-    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha = 0.7, coreset_ratio = 0.8, init_train=False):
+    def train_learner(self, x_train, y_train, pseudo_x=[], pseudo_y=[], alpha = 1, coreset_ratio = 0.9, init_train=False):
         self.before_train(x_train, y_train)
         Beta = 0.5
         print('before size: {}, {}'.format(x_train.shape, y_train.shape))
@@ -39,7 +39,7 @@ class SRTFD(ContinualLearner):
         mask_pl = np.logical_and(idx >= len(
             y_train), idx < orig_size + len(pseudo_y))
         
-        print(len(idx[mask_l]), len(idx))
+        print(len(idx[mask_l]), len(mask_pl))
 
         x_train = x_train[idx[mask_l]]
         y_train = y_train[idx[mask_l]]
@@ -56,7 +56,7 @@ class SRTFD(ContinualLearner):
 
         if alpha is not None:
             ps_train_loader = data.DataLoader(ps_train_dataset, batch_size=self.batch, shuffle=len(ps_train_dataset) != 0, num_workers=0,
-                                              drop_last=True)
+                                              drop_last=False)
         else:
             train_dataset = data.ConcatDataset(
                 [train_dataset, ps_train_dataset])

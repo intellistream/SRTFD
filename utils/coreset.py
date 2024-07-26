@@ -66,10 +66,6 @@ class CoresetGreedy:
             for label in all_labels if len(new_batch.get(label, [])) + len(existing_labels.get(label, [])) > 0
         )
 
-        # Create the balanced batch
-        # new_balanced_batch = np.concatenate(
-        #     [np.array(new_batch[label][:min_count]) for label in np.unique(all_labels) if len(new_batch[label]) > 0]
-        # )
         new_balanced_batch = np.array([item for sublist in new_batch.values()
                                     for item in sublist[:min_count]])
 
