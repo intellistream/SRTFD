@@ -3,7 +3,7 @@ from continuum.dataset_scripts.dataset_base import DatasetBase
 import scipy.io
 import numpy as np
 from continuum.dataset_scripts.dataset_base import DatasetBase
-from continuum.non_stationary import construct_ns_multiple_wrapper, test_ns
+from continuum.non_stationary import construct_ns_multiple, test_ns
 from collections import deque
 from sklearn.utils import resample
 
@@ -56,9 +56,24 @@ class HRS(DatasetBase):
 
             labels = np.concatenate(labels, axis=0)
             data = np.concatenate(self.data, axis=0)
-
-            self.test_set = construct_ns_multiple_wrapper(
-                data[:-1, :], labels[:-1], self.task_nums, 120, self.params.ns_type, self.params.ns_factor, plot=self.params.plot_sample)
+            std_devs = [0.1, 0.5, 0.8]
+            noisy_datasets = []
+            for std in std_devs:
+                noise = np.random.normal(0, std, data.shape)
+                noisy_data = data + noise
+                noisy_datasets.append(noisy_data)
+            #self.test_set = construct_ns_multiple(data[:-1, :], labels[:-1], self.params.ns_type, self.params.ns_factor, self.task_nums) 
+            #construct_ns_multiple(
+                #data[:-1, :], labels[:-1], self.task_nums, 120, self.params.ns_type, self.params.ns_factor)
+            
+            for i in range(self.task_nums):
+                #noisy_data1 = random.choice(noisy_datasets)
+                noisy_data1 = noisy_datasets[i % len(noisy_datasets)]
+                indices = np.random.choice(noisy_data.shape[0], int(noisy_data.shape[0]/self.task_nums), replace=False)
+                x = noisy_data1[indices]
+                y = labels[indices]
+               # print(y)
+                self.test_set.append((x, y))
 
     def s_sample(self, x_train, y_train):
         n_idx = np.where(y_train == 0)[0]
@@ -66,6 +81,7 @@ class HRS(DatasetBase):
 
         n_cls = len(n_idx)
         f_cls = len(f_idx)
+        print(n_cls,f_cls)
 
         if self.params.n_r == 0 or n_cls == 0:
             target_f_size = f_cls
@@ -113,8 +129,8 @@ class HRS(DatasetBase):
         x_train = x_train[selected_indices]
         y_train = y_train[selected_indices]
 
-        if self.scenario == 'vc':
-            x_train, y_train = self.s_sample(x_train, y_train)
+        #if self.scenario == 'vc':
+            #x_train, y_train = self.s_sample(x_train, y_train)
 
         labels = np.unique(y_train)
 

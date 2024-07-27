@@ -79,7 +79,7 @@ if __name__ == "__main__":
                         help='weight_decay')
 
     ######################## Data#########################
-    parser.add_argument('--num_tasks', dest='num_tasks', default=10,
+    parser.add_argument('--num_tasks', dest='num_tasks', default=6,
                         type=int,
                         help='Number of tasks (default: %(default)s), OpenLORIS num_tasks is predefined')
     parser.add_argument('--fix_order', dest='fix_order', default=False,
@@ -88,12 +88,12 @@ if __name__ == "__main__":
     parser.add_argument('--plot_sample', dest='plot_sample', default=False,
                         type=boolean_string,
                         help='In NI scenario, should sample images be plotted (default: %(default)s)')
-    parser.add_argument('--data', dest='data', default="CARLS_S",
+    parser.add_argument('--data', dest='data', default="HRS",
                         help='Path to the dataset. (default: %(default)s)')
     parser.add_argument('--cl_type', dest='cl_type', default="vc", choices=['nc', 'vc'],
                         help='Continual learning type: new class "nc" or new instance "ni". (default: %(default)s)')
     parser.add_argument('--ns_factor', dest='ns_factor',
-                        default=0.4, type=float,
+                        default=0.1, type=float,
                         help='Change factor for non-stationary data(default: %(default)s)')
     parser.add_argument('--ns_type', dest='ns_type', default='noise', type=str, choices=['noise', 'occlusion', 'blur'],
                         help='Type of non-stationary (default: %(default)s)')

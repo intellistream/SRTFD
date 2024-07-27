@@ -185,7 +185,7 @@ def construct_ns_single(train_x_split, train_y_split, test_x_split, test_y_split
 
 # def construct_ns_multiple(train_x_split, train_y_split, val_x_rdm_split, val_y_rdm_split, test_x_split,
 #                           test_y_split, ns_type, change_factors, plot):
-def construct_ns_multiple(train_x_split, train_y_split, ns_type, change_factors, num_tasks, plot):
+def construct_ns_multiple(train_x_split, train_y_split, ns_type, change_factors, num_tasks):
     train_list = []
     # val_list = []
     # test_list = []
@@ -199,11 +199,8 @@ def construct_ns_multiple(train_x_split, train_y_split, ns_type, change_factors,
         # train
 
         # print(ns_type, change_factors)
-
-        tmp = ns_generator(train_x_split[i], train_y_split[i], color=True)
+        tmp = ns_generator(train_x_split, train_y_split, color=True)
         train_list.append(tmp.next_task(factor))
-        if plot:
-            tmp.show_sample()
 
         # tmp_val = ns_generator(
         #     val_x_rdm_split[i], val_y_rdm_split[i], color=True)
