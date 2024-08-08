@@ -17,12 +17,12 @@ python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent ER --num_r
 
 # ASER
 python3 general_main.py --data HRS --num_tasks 6 --cl_type nc --agent ER --num_runs 1 --N 1000 --update ASER --retrieve ASER --mem_size 5000 --aser_type asvm --n_smp_cls 1.5 --k 3 
-python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent ER --num_runs 1 --ns_factor 0.4 --update ASER --retrieve ASER --mem_size 5000 --aser_type asvm --n_smp_cls 1.5 --k 3  --n_r 1 --f_r 1
+python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent ER --num_runs 1 --update ASER --retrieve ASER --mem_size 5000 --aser_type asvm --n_smp_cls 1.5 --k 3  
 
 # AGEM
 python3 general_main.py --data HRS --num_tasks 6 --cl_type nc --agent AGEM --num_runs 1 --N 1000 --retrieve random --update random --mem_size 5000
-python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent AGEM --num_runs 1 --ns_factor 0.4 --retrieve random --update random --mem_size 5000  --n_r 1 --f_r 1
+python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent AGEM --num_runs 1 --retrieve random --update random --mem_size 5000 
 
 # MPOS_RVFL
 python3 general_main.py --data HRS --num_tasks 6 --cl_type nc --agent MPOS_RVFL --num_runs 1 --N 1000 --n_anchor 50
-python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent MPOS_RVFL --num_runs 1 --ns_factor 0.4 --N 1000 --n_anchor 50  --n_r 1 --f_r 1
+python3 general_main.py --data HRS --num_tasks 6 --cl_type vc --agent MPOS_RVFL --num_runs 1 --N 1000 --n_anchor 50  
