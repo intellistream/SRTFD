@@ -15,6 +15,7 @@ from utils.setup_elements import n_classes
 from sklearn.metrics import recall_score
 from sklearn import metrics
 from utils.recall_loss import RecallLoss, FocalLoss
+from time import time_ns
 
 
 class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
@@ -140,6 +141,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         g_mean = np.zeros(len(test_loaders))
         support_micro = np.zeros(len(test_loaders))
 
+        latencies = []
+
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
             exemplar_means = {}
             cls_exemplar = {cls: [] for cls in self.old_labels}
@@ -183,6 +186,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             full_acc = torch.empty(0)
             full_label = torch.empty(0)
             for task, test_loader in enumerate(test_loaders):
+                input_time = time_ns()
                 acc = AverageMeter()
                 accuracy11 = torch.empty(0)
                 Label11 = torch.empty(0)
@@ -263,8 +267,6 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         Label11 = maybe_cuda(Label11, self.cuda)
                         batch_y = maybe_cuda(batch_y, self.cuda)
                         Label11 = torch.cat((Label11, batch_y), dim=0)
-                        
-                        
 
                     if self.params.error_analysis:
                         correct_lb += [task] * len(batch_y)
@@ -295,9 +297,13 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         else:
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
+
+                latencies.append((time_ns() - input_time) /
+                                 (len(test_loader) * self.params.test_batch))
+
                 acc_array[task] = acc.avg()
                 # recall1[task] = recall_score(
-                    # accuracy11.cpu(), Label11.cpu(), average='macro', zero_division=0)
+                # accuracy11.cpu(), Label11.cpu(), average='macro', zero_division=0)
                 p[task], recall[task], f1[task], _ = metrics.precision_recall_fscore_support(
                     accuracy11.cpu(), Label11.cpu(), zero_division=0, average='macro')
 
@@ -348,4 +354,4 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             print(self.bias_norm_new)
             with open('confusion', 'wb') as fp:
                 pickle.dump([correct_lb, predict_lb], fp)
-        return acc_array, recall, p, f1, g_mean
+        return acc_array, recall, p, f1, g_mean, latencies

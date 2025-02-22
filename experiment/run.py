@@ -49,6 +49,8 @@ def multiple_run(params, store=False, save_path=None):
     precision_list = []
     f1_list = []
     gmean_list = []
+    latency_list = []
+    throughput_list = []
 
     for run in range(params.num_runs):
         tmp_acc = []
@@ -56,6 +58,7 @@ def multiple_run(params, store=False, save_path=None):
         tmp_pre = []
         tmp_f1 = []
         tmp_gmean = []
+        throughput = []
         run_start = time.time()
         data_continuum.new_run()
         model = setup_architecture(params)
@@ -76,9 +79,11 @@ def multiple_run(params, store=False, save_path=None):
         agent = agents[params.agent](model, opt, params)
 
         # prepare val data loader
-        test_loaders = setup_test_loader(data_continuum.test_data(), params)
+        test_loaders, ttl_data = setup_test_loader(
+            data_continuum.test_data(), params)
         TrainTime = 0
         TestTime = 0
+        ttl_latencies = []
         if params.online:
             # initial training
             run_start = time.time()
@@ -95,17 +100,19 @@ def multiple_run(params, store=False, save_path=None):
 
                 Test_time = time.time()
                 if params.agent == 'SRTFD':
-                    acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(
+                    acc_array, rec_array, pre_array, f1_array, gmean_array, latencies = agent.evaluate(
                         test_loaders, i, run, conf_threshold=0.95, uncertain_threshold=1)
 
                 else:
-                    acc_array, rec_array, pre_array,  f1_array, gmean_array = agent.evaluate(test_loaders, i, run)
+                    acc_array, rec_array, pre_array,  f1_array, gmean_array, latencies = agent.evaluate(
+                        test_loaders, i, run)
 
                 tmp_acc.append(acc_array)
                 tmp_rec.append(rec_array)
                 tmp_pre.append(pre_array)
                 tmp_f1.append(f1_array)
                 tmp_gmean.append(gmean_array)
+                ttl_latencies.extend(latencies)
                 Test_time_end = time.time()
 
                 TestTime = TestTime + (Test_time_end - Test_time)
@@ -124,33 +131,39 @@ def multiple_run(params, store=False, save_path=None):
                 train_time_end = time.time()
                 TrainTime = TrainTime + (train_time_end - train_time_start)
 
-            
             Test_time = time.time()
             if params.agent == 'SRTFD':
-                acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(
+                acc_array, rec_array, pre_array, f1_array, gmean_array, latencies = agent.evaluate(
                     test_loaders, i+1, run, conf_threshold=0.95, uncertain_threshold=1)
 
             else:
-                acc_array, rec_array, pre_array, f1_array, gmean_array = agent.evaluate(test_loaders, i+1, run)
+                acc_array, rec_array, pre_array, f1_array, gmean_array, latencies = agent.evaluate(
+                    test_loaders, i+1, run)
 
             tmp_acc.append(acc_array)
             tmp_rec.append(rec_array)
             tmp_pre.append(pre_array)
             tmp_f1.append(f1_array)
             tmp_gmean.append(gmean_array)
+            ttl_latencies.extend(latencies)
             Test_time_end = time.time()
 
             TestTime = TestTime + (Test_time_end - Test_time)
 
+            latency = np.percentile(latencies, 95)
+            throughput = ttl_data * (i+2) / TestTime
+
             run_end = time.time()
 
             print(
-                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-----------avg_end_pre {}-------avg_end_f1 {}-----------avg_end_gmean {}-------train time {}------test time {} ----running time {}".format(run, np.mean(tmp_acc[-1]), np.mean(tmp_rec[-1]), np.mean(tmp_pre[-1]), np.mean(tmp_f1[-1]), np.mean(tmp_gmean[-1]), TrainTime, TestTime, run_end-run_start))
+                "-----------run {}-----------avg_end_acc {}-------avg_end_rec {}-----------avg_end_pre {}-------avg_end_f1 {}-----------avg_end_gmean {}-------train time {}------test time {} ----running time {} ----avg latency (ns) {} ----throughput (per sec) {}".format(run, np.mean(tmp_acc[-1]), np.mean(tmp_rec[-1]), np.mean(tmp_pre[-1]), np.mean(tmp_f1[-1]), np.mean(tmp_gmean[-1]), TrainTime, TestTime, run_end-run_start, latency, throughput))
             accuracy_list.append(np.array(tmp_acc))
             recall_list.append(np.array(tmp_rec))
             precision_list.append(np.array(tmp_pre))
             f1_list.append(np.array(tmp_f1))
             gmean_list.append(np.array(tmp_gmean))
+            latency_list.append(latency)
+            throughput_list.append(throughput)
         else:
             x_train_offline = []
             y_train_offline = []
@@ -187,10 +200,12 @@ def multiple_run(params, store=False, save_path=None):
     if params.online:
         avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt, avg_end_rec, avg_rec, avg_end_pre, avg_pre, avg_end_f1, avg_f1, avg_end_gmean, avg_gmean = compute_performance(
             accuracy_array, recall_array, precision_array, f1_array, gmean_array)
+        latency = sum(latency_list) / len(latency_list)
+        throughput = sum(throughput_list) / len(throughput_list)
         print(
             '----------- Total {} run: {}s -----------'.format(params.num_runs, end - start))
-        print('----------- Avg_End_Acc {} Avg_End_Fgt {} Avg_Acc {} Avg_Bwtp {} Avg_Fwt {}  Avg_End_Rec {} Avg_Rec {}  Avg_End_Precision {} Avg_Precision {}  Avg_End_F1 {} Avg_F1 {}  Avg_End_Gmean {} Avg_Gmean {}-----------'
-              .format(avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt, avg_end_rec, avg_rec, avg_end_pre, avg_pre, avg_end_f1, avg_f1, avg_end_gmean, avg_gmean))
+        print('----------- Avg_End_Acc {} Avg_End_Fgt {} Avg_Acc {} Avg_Bwtp {} Avg_Fwt {}  Avg_End_Rec {} Avg_Rec {}  Avg_End_Precision {} Avg_Precision {}  Avg_End_F1 {} Avg_F1 {}  Avg_End_Gmean {} Avg_Gmean {} Avg_Latency (ns) {} Avg_Throughput (per sec) {}-----------'
+              .format(avg_end_acc, avg_end_fgt, avg_acc, avg_bwtp, avg_fwt, avg_end_rec, avg_rec, avg_end_pre, avg_pre, avg_end_f1, avg_f1, avg_end_gmean, avg_gmean, latency, throughput))
     else:
         print(
             '----------- Total {} run: {}s -----------'.format(params.num_runs, end - start))

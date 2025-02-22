@@ -60,12 +60,15 @@ class dataset_transform(data.Dataset):
 def setup_test_loader(test_data, params):
     test_loaders = []
 
+    ttl_data = 0
+
     for (x_test, y_test) in test_data:
         #print(x_test)
         test_dataset = dataset_transform(x_test, y_test, transform=transforms_match[params.data])
         test_loader = data.DataLoader(test_dataset, batch_size=params.test_batch, shuffle=False, num_workers=0)
         test_loaders.append(test_loader)
-    return test_loaders
+        ttl_data += len(test_dataset)
+    return test_loaders, ttl_data
 
 
 def shuffle_data(x, y):
