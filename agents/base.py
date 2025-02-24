@@ -142,6 +142,7 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
         support_micro = np.zeros(len(test_loaders))
 
         latencies = []
+        ttl_time = 0
 
         if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
             exemplar_means = {}
@@ -186,11 +187,12 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             full_acc = torch.empty(0)
             full_label = torch.empty(0)
             for task, test_loader in enumerate(test_loaders):
-                input_time = time_ns()
                 acc = AverageMeter()
                 accuracy11 = torch.empty(0)
                 Label11 = torch.empty(0)
+                time_taken = 0
                 for i, (batch_x, batch_y) in enumerate(test_loader):
+                    input_time = time_ns()
                     batch_x = maybe_cuda(batch_x, self.cuda)
                     batch_y = maybe_cuda(batch_y, self.cuda)
                     if self.params.trick['ncm_trick'] or self.params.agent in ['ICARL', 'SCR', 'SCP']:
@@ -220,6 +222,10 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                         # _, preds = torch.matmul(means, feature).max(0)
                         correct_cnt = (np.array(self.old_labels)[
                             pred_label.tolist()] == batch_y.cpu().numpy()).sum().item() / batch_y.size(0)
+                        
+                        time_taken = time_ns() - input_time
+                        latencies.append(time_taken / len(batch_y))
+                        ttl_time += time_taken
                     else:
                         if self.params.agent == 'MPOS_RVFL':
                             pred_label = torch.from_numpy(
@@ -228,6 +234,10 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             logits = self.model.forward(batch_x)
                             probs = F.softmax(logits, dim=1)
                             conf, pred_label = torch.max(probs, 1)
+
+                        time_taken = time_ns() - input_time
+                        latencies.append(time_taken / len(batch_y))
+                        ttl_time += time_taken
 
                         if curr_task == task and self.params.agent == 'SRTFD':
                             self.model.train()
@@ -298,8 +308,8 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
                             pass
                     acc.update(correct_cnt, batch_y.size(0))
 
-                latencies.append((time_ns() - input_time) /
-                                 (len(test_loader) * self.params.test_batch))
+                # latencies.append(time_taken /
+                #                  (len(test_loader) * self.params.test_batch))
 
                 acc_array[task] = acc.avg()
                 # recall1[task] = recall_score(
@@ -354,4 +364,4 @@ class ContinualLearner(torch.nn.Module, metaclass=abc.ABCMeta):
             print(self.bias_norm_new)
             with open('confusion', 'wb') as fp:
                 pickle.dump([correct_lb, predict_lb], fp)
-        return acc_array, recall, p, f1, g_mean, latencies
+        return acc_array, recall, p, f1, g_mean, latencies, ttl_time / 1e9
