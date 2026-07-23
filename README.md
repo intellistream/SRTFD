@@ -1,6 +1,16 @@
 # SRTFD: Scalable Real-time Fault Diagnosis
 
-```markdown
+SRTFD is a continual-learning system for real-time fault diagnosis over
+evolving industrial data streams. This repository is the DataSys research
+artifact accompanying the
+[ICDE 2025 paper](https://doi.org/10.1109/ICDE65448.2025.00328).
+
+## Project status
+
+The public TEP and CARLS experiment paths are included. The HRS dataset is
+private and cannot be used for public reproduction, so results depending on it
+require separate authorized access.
+
 ## Reproducibility
 
 **1. Environment Requirements**
@@ -44,4 +54,8 @@ ii. **Run SRTFD**
 **Additional Resources**
 
 For more detailed instructions and documentation, please refer to the project's `test.bash` file or the official documentation provided with the project.
-```
+
+## License
+
+The repository is licensed under Apache License 2.0. Reused continual-learning
+components and datasets retain their upstream notices and terms.
